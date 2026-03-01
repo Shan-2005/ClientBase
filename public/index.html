@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClientBase</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Doto:wght@100;200;300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --red: #FF2D2D;
+            --bg: #000000;
+            --surface: #0a0a0a;
+            --card: #0d0d0d;
+            --border: rgba(255, 255, 255, 0.06);
+            --border-hover: rgba(255, 255, 255, 0.12);
+            --white: #ffffff;
+            --gray: rgba(255, 255, 255, 0.5);
+            --dim: rgba(255, 255, 255, 0.3);
+            --green: #22C55E;
+            --dot: 'Doto', sans-serif;
+            --body: 'Inter', sans-serif;
+            --mono: 'Space Mono', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        ::selection {
+            background: var(--red);
+            color: #000;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--white);
+            font-family: var(--body);
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+            font-size: 14px;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 15% 20%, rgba(255, 45, 45, 0.15) 0%, transparent 55%),
+                radial-gradient(ellipse at 85% 75%, rgba(45, 80, 255, 0.14) 0%, transparent 55%),
+                radial-gradient(ellipse at 50% 50%, rgba(120, 40, 200, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 10%, rgba(0, 220, 160, 0.07) 0%, transparent 45%),
+                radial-gradient(ellipse at 30% 90%, rgba(255, 140, 50, 0.06) 0%, transparent 40%),
+                radial-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 28px 28px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            right: -150px;
+            top: 20%;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            z-index: 0;
+            pointer-events: none;
+            box-shadow:
+                inset 0 0 0 70px transparent,
+                inset 0 0 0 71px rgba(255, 255, 255, 0.02),
+                inset 0 0 0 150px transparent,
+                inset 0 0 0 151px rgba(255, 255, 255, 0.015);
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: 220px;
+            background: rgba(8, 8, 12, 0.65);
+            backdrop-filter: blur(50px) saturate(1.2);
+            -webkit-backdrop-filter: blur(50px) saturate(1.2);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            position: relative;
+        }
+
+        .logo-area {
+            padding: 1.8rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-family: var(--dot);
+            font-weight: 800;
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+        }
+
+        .logo .accent {
+            color: var(--red);
+        }
+
+        .system-tag {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            font-family: var(--mono);
+            font-size: 0.55rem;
+            color: var(--dim);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.4;
+                transform: scale(0.8);
+            }
+        }
+
+        .nav {
+            padding: 0.8rem 0;
+            flex: 1;
+        }
+
+        .nav-item {
+            padding: 0.65rem 1.5rem;
+            cursor: pointer;
+            color: var(--gray);
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 2px solid transparent;
+        }
+
+        .nav-item:hover {
+            color: var(--white);
+        }
+
+        .nav-item.active {
+            color: var(--red);
+            border-left-color: var(--red);
+            background: rgba(255, 45, 45, 0.03);
+        }
+
+        .nav-icon {
+            font-size: 0.9rem;
+        }
+
+        .sidebar-footer {
+            padding: 1.2rem 1.5rem;
+            border-top: 1px solid var(--border);
+            font-family: var(--mono);
+            font-size: 0.5rem;
+            color: var(--dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            line-height: 2;
+        }
+
+        /* ===== MAIN ===== */
+        .main {
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .main-inner {
+            padding: 2.5rem 3rem;
+            max-width: 1200px;
+        }
+
+        .view {
+            display: none;
+            animation: fadeUp 0.3s ease;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(8px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        /* Section Title (with left red bar) */
+        .section-title {
+            border-left: 3px solid var(--red);
+            padding-left: 16px;
+            margin-bottom: 2rem;
+        }
+
+        .section-title h1 {
+            font-family: var(--dot);
+            font-size: 2.8rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            line-height: 1.1;
+        }
+
+        .section-title p {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            color: var(--dim);
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            margin-top: 6px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+        }
+
+        .crumbs {
+            font-family: var(--mono);
+            font-size: 0.55rem;
+            color: var(--dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 6px;
+        }
+
+        .crumbs span {
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .crumbs span:hover {
+            color: var(--white);
+        }
+
+        .crumbs .sep {
+            cursor: default;
+        }
+
+        /* ===== GRID ===== */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        /* ===== CARD ===== */
+        .card {
+            background: rgba(15, 15, 20, 0.5);
+            backdrop-filter: blur(24px) saturate(1.3);
+            -webkit-backdrop-filter: blur(24px) saturate(1.3);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 16px;
+            padding: 1.5rem;
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.14);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-tag {
+            font-family: var(--mono);
+            font-size: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--red);
+            margin-bottom: 8px;
+        }
+
+        .card-name {
+            font-family: var(--dot);
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 0.55rem 1.4rem;
+            border-radius: 100px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--white);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            border-color: var(--white);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .btn-fill {
+            background: var(--white);
+            color: #000;
+            border-color: var(--white);
+        }
+
+        .btn-fill:hover {
+            background: #e0e0e0;
+            border-color: #e0e0e0;
+        }
+
+        .btn-danger {
+            border-color: rgba(255, 45, 45, 0.2);
+            color: var(--red);
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 45, 45, 0.08);
+            border-color: var(--red);
+        }
+
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 0.5rem;
+        }
+
+        /* ===== INPUTS ===== */
+        input,
+        textarea,
+        select {
+            width: 100%;
+            background: rgba(10, 10, 14, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 0.65rem 1rem;
+            color: var(--white);
+            font-family: var(--body);
+            font-size: 0.8rem;
+            outline: none;
+            margin-bottom: 0.8rem;
+            transition: border 0.2s;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            border-color: var(--red);
+        }
+
+        textarea {
+            font-family: var(--mono);
+            font-size: 0.75rem;
+        }
+
+        /* ===== TABLE ===== */
+        .tbl {
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-top: 1rem;
+            background: rgba(10, 10, 14, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            font-family: var(--mono);
+            font-size: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--dim);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-weight: 400;
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            font-size: 0.8rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* ===== STAT ===== */
+        .stat-val {
+            font-family: var(--dot);
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin: 0.5rem 0;
+        }
+
+        .stat-label {
+            font-family: var(--mono);
+            font-size: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            color: var(--dim);
+        }
+
+        /* ===== UID BADGE ===== */
+        .uid {
+            font-family: var(--mono);
+            font-size: 0.55rem;
+            color: var(--gray);
+            cursor: pointer;
+            padding: 3px 8px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            display: inline-block;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+
+        .uid:hover {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        /* ===== CODE ===== */
+        .code {
+            background: rgba(8, 8, 12, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 0.8rem 1rem;
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            color: var(--gray);
+            white-space: pre-wrap;
+            margin-bottom: 0.8rem;
+        }
+
+        /* ===== OVERLAY / MODAL ===== */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: rgba(12, 12, 16, 0.7);
+            backdrop-filter: blur(40px) saturate(1.4);
+            -webkit-backdrop-filter: blur(40px) saturate(1.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 2rem;
+            width: 440px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal h2 {
+            font-family: var(--dot);
+            font-weight: 700;
+            font-size: 1.3rem;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 0.5rem;
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--red);
+            color: #fff;
+            padding: 0.5rem 1.2rem;
+            border-radius: 100px;
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            z-index: 2000;
+            display: none;
+            animation: fadeUp 0.3s ease;
+        }
+
+        /* ===== DECORATIONS ===== */
+        .concentric {
+            position: fixed;
+            right: -200px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .concentric::before,
+        .concentric::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .concentric::before {
+            top: 60px;
+            left: 60px;
+            right: 60px;
+            bottom: 60px;
+        }
+
+        .concentric::after {
+            top: 140px;
+            left: 140px;
+            right: 140px;
+            bottom: 140px;
+        }
+
+        .glow-red {
+            position: fixed;
+            top: 10%;
+            left: 10%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255, 45, 45, 0.04) 0%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .glow-blue {
+            position: fixed;
+            bottom: 10%;
+            right: 20%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(45, 100, 255, 0.03) 0%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .divider {
+            border: none;
+            border-top: 1px dashed var(--border);
+            margin: 2rem 0;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Decorations -->
+    <div class="concentric"></div>
+    <div class="glow-red"></div>
+    <div class="glow-blue"></div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="logo-area">
+            <div class="logo">Client<span class="accent">Base</span></div>
+            <div class="system-tag">
+                <div class="pulse-dot"></div> System Online
+            </div>
+        </div>
+        <div class="nav">
+            <div class="nav-item active" data-view="dashboard"><span class="nav-icon">⚡</span> Pulse</div>
+            <div class="nav-item" data-view="databases"><span class="nav-icon">⬡</span> Databases</div>
+            <div class="nav-item" data-view="storage"><span class="nav-icon">◈</span> Storage</div>
+            <div class="nav-item" data-view="functions"><span class="nav-icon">λ</span> Functions</div>
+            <div class="nav-item" data-view="analytics"><span class="nav-icon">◎</span> Analytics</div>
+            <div class="nav-item" data-view="websites"><span class="nav-icon">◉</span> Websites</div>
+            <div class="nav-item" data-view="keys"><span class="nav-icon">⚿</span> API Keys</div>
+        </div>
+        <div class="sidebar-footer">D:\ SSD Cluster<br>v2.0 // Optimized</div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+        <div class="main-inner">
+
+            <!-- PULSE -->
+            <div id="view-dashboard" class="view active">
+                <div class="header">
+                    <div class="section-title">
+                        <h1>Pulse</h1>
+                        <p>Infrastructure telemetry</p>
+                    </div>
+                </div>
+                <div class="grid">
+                    <div class="card">
+                        <p class="stat-label">SSD Storage</p>
+                        <div class="stat-val" id="s-pct">0.00%</div>
+                        <div style="height:3px;background:rgba(255,255,255,0.05);border-radius:2px;margin:0.5rem 0">
+                            <div id="s-bar"
+                                style="height:100%;background:var(--red);border-radius:2px;width:0%;transition:width 0.6s">
+                            </div>
+                        </div>
+                        <p class="stat-label">of 5.0 GB physical quota</p>
+                    </div>
+                    <div class="card">
+                        <p class="stat-label">API Requests</p>
+                        <div class="stat-val" id="s-reqs">0</div>
+                        <p class="stat-label">Tracked by engine</p>
+                    </div>
+                    <div class="card">
+                        <p class="stat-label">Avg Latency</p>
+                        <div class="stat-val" style="color:var(--red)" id="s-lat">0ms</div>
+                        <p class="stat-label">SSD native I/O</p>
+                    </div>
+                    <div class="card">
+                        <p class="stat-label">Databases</p>
+                        <div class="stat-val" id="s-dbs">0</div>
+                        <p class="stat-label">Active instances</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DATABASES -->
+            <div id="view-databases" class="view">
+                <div class="crumbs" id="db-crumbs"><span onclick="loadDatabases()">Databases</span></div>
+                <div class="header">
+                    <div class="section-title" id="db-header">
+                        <h1>Databases</h1>
+                        <p>Relational storage engine</p>
+                    </div><button class="btn btn-fill" onclick="openModal('create-db')">+ New Database</button>
+                </div>
+                <div id="db-content">
+                    <div id="db-list" class="grid"></div>
+                </div>
+            </div>
+
+            <!-- STORAGE -->
+            <div id="view-storage" class="view">
+                <div class="crumbs" id="storage-crumbs"><span onclick="loadBuckets()">Buckets</span></div>
+                <div class="header">
+                    <div class="section-title" id="storage-header">
+                        <h1>Storage</h1>
+                        <p>Asset management</p>
+                    </div><button class="btn btn-fill" onclick="openModal('create-bucket')">+ New Bucket</button>
+                </div>
+                <div id="storage-content">
+                    <div id="bucket-list" class="grid"></div>
+                </div>
+            </div>
+
+            <!-- FUNCTIONS -->
+            <div id="view-functions" class="view">
+                <div class="header">
+                    <div class="section-title">
+                        <h1>Functions</h1>
+                        <p>Edge execution runtime</p>
+                    </div><button class="btn btn-fill" onclick="openModal('create-fn')">+ Deploy</button>
+                </div>
+                <div id="fn-list" class="grid"></div>
+            </div>
+
+            <!-- ANALYTICS -->
+            <div id="view-analytics" class="view">
+                <div class="header">
+                    <div class="section-title">
+                        <h1>Analytics</h1>
+                        <p>Request telemetry</p>
+                    </div>
+                </div>
+                <div class="grid" id="analytics-cards"></div>
+                <hr class="divider">
+                <div class="section-title" style="margin-bottom:1rem">
+                    <h1 style="font-size:1.4rem">Top Endpoints</h1>
+                    <p>Most hit routes</p>
+                </div>
+                <div class="tbl">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Path</th>
+                                <th>Hits</th>
+                            </tr>
+                        </thead>
+                        <tbody id="top-endpoints"></tbody>
+                    </table>
+                </div>
+                <hr class="divider">
+                <div class="section-title" style="margin-bottom:1rem">
+                    <h1 style="font-size:1.4rem">Request Log</h1>
+                    <p>Last 50 requests</p>
+                </div>
+                <div class="tbl">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Path</th>
+                                <th>Status</th>
+                                <th>Time</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody id="request-logs"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- WEBSITES -->
+            <div id="view-websites" class="view">
+                <div class="header">
+                    <div class="section-title">
+                        <h1>Websites</h1>
+                        <p>Static hosting deployment</p>
+                    </div><button class="btn btn-fill" onclick="openModal('create-site')">+ Deploy Site</button>
+                </div>
+                <div id="site-list" class="grid"></div>
+            </div>
+
+            <!-- API KEYS -->
+            <div id="view-keys" class="view">
+                <div class="header">
+                    <div class="section-title">
+                        <h1>API Keys</h1>
+                        <p>Authentication & access control</p>
+                    </div><button class="btn btn-fill" onclick="openModal('create-key')">+ Create Key</button>
+                </div>
+                <div class="card" style="margin-bottom:16px">
+                    <p class="card-tag">Master Key</p>
+                    <div class="code" style="color:var(--white);cursor:pointer;margin-top:0.4rem"
+                        onclick="copyText('master-key-ssd-secret')">master-key-ssd-secret</div>
+                    <p style="font-size:0.7rem;color:var(--dim)">Full admin access via x-appwrite-key header.</p>
+                </div>
+                <div id="key-list"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <!-- MODALS -->
+    <div class="overlay" id="modal-overlay">
+        <div class="modal" id="modal-create-db" style="display:none">
+            <h2>New Database</h2><input id="new-db-name" placeholder="Database name">
+            <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button
+                    class="btn btn-fill" onclick="handleCreateDB()">Initialize</button></div>
+        </div>
+        <div class="modal" id="modal-create-col" style="display:none">
+            <h2>New Collection</h2><input id="new-col-name" placeholder="Collection name">
+            <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button
+                    class="btn btn-fill" onclick="handleCreateCol()">Create</button></div>
+        </div>
+        <div class="modal" id="modal-create-bucket" style="display:none">
+            <h2>New Bucket</h2><input id="new-bucket-name" placeholder="Bucket name">
+            <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button
+                    class="btn btn-fill" onclick="handleCreateBucket()">Create</button></div>
+        </div>
+        <div class="modal" id="modal-create-fn" style="display:none;width:580px">
+            <h2>Deploy Function</h2><input id="new-fn-name" placeholder="Function name"><textarea id="new-fn-code"
+                rows="8" placeholder="async (req, res) => { return { ok: true }; }"></textarea>
+            <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button
+                    class="btn btn-fill" onclick="handleCreateFn()">Deploy</button></div>
+        </div>
+        <div class="modal" id="modal-upload-file" style="display:none">
+            <h2>Upload File</h2><input type="file" id="file-input">
+            <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button
+                    class="btn btn-fill" onclick="handleFileUpload()">Upload</button></div>
+        </div>
+        <div class="modal" id="modal-create-attr" style="display:none">
+            <h2>Add Attribute</h2><input id="new-attr-key" placeholder="Attribute key"><select id="new-attr-type">
+                <option value="string">String</option>
+                <option value="integer">Integer</option>
+                <option value="float">Float</option>
+                <option value="boolean">Boolean</option>
+            </select>
+            <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button
+                    class="btn btn-fill" onclick="handleCreateAttr()">Add</button></div>
+        </div>
+        <div class="modal" id="modal-create-doc" style="display:none;width:500px">
+            <h2>Insert Document</h2>
+            <div id="doc-fields"></div>
+            <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button
+                    class="btn btn-fill" onclick="handleCreateDoc()">Insert</button></div>
+        </div>
+        <div class="modal" id="modal-create-key" style="display:none">
+            <h2>Create API Key</h2><input id="new-key-name" placeholder="Key name (e.g. ios-app)"><select
+                id="new-key-scope">
+                <option value="all">Full Access</option>
+                <option value="databases">Databases Only</option>
+                <option value="storage">Storage Only</option>
+                <option value="functions">Functions Only</option>
+            </select>
+            <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button
+                    class="btn btn-fill" onclick="handleCreateKey()">Generate</button></div>
+        </div>
+        <div class="modal" id="modal-create-site" style="display:none">
+            <h2>Deploy Website</h2><input id="new-site-name" placeholder="Site name"><select
+                id="new-site-bucket"></select><input id="new-site-domain" placeholder="Domain (e.g. mysite.local)">
+            <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button
+                    class="btn btn-fill" onclick="handleCreateSite()">Deploy</button></div>
+        </div>
+    </div>
+
+    <script>
+        let currentDB = null, currentCol = null, currentBucket = null;
+        const H = { 'Content-Type': 'application/json' };
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.onclick = () => {
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                item.classList.add('active');
+                document.getElementById('view-' + item.dataset.view).classList.add('active');
+                initView(item.dataset.view);
+            };
+        });
+
+        function initView(v) {
+            if (v === 'dashboard') loadPulse();
+            if (v === 'databases') loadDatabases();
+            if (v === 'storage') loadBuckets();
+            if (v === 'functions') loadFunctions();
+            if (v === 'analytics') loadAnalytics();
+            if (v === 'websites') loadWebsites();
+            if (v === 'keys') loadKeys();
+        }
+
+        function copyText(t) { navigator.clipboard.writeText(t); showToast('Copied to clipboard'); }
+        function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 1800); }
+        function openModal(type) { document.getElementById('modal-overlay').classList.add('active'); document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); document.getElementById('modal-' + type).style.display = 'block'; }
+        function closeModal() { document.getElementById('modal-overlay').classList.remove('active'); }
+
+        // === PULSE ===
+        async function loadPulse() {
+            const u = await (await fetch('/v1/storage/usage')).json();
+            document.getElementById('s-pct').innerText = u.percent.toFixed(2) + '%';
+            document.getElementById('s-bar').style.width = u.percent + '%';
+            try { const a = await (await fetch('/v1/analytics/overview')).json(); document.getElementById('s-reqs').innerText = a.totalRequests; document.getElementById('s-lat').innerText = a.avgLatency + 'ms'; } catch (e) { }
+            const d = await (await fetch('/v1/databases')).json(); document.getElementById('s-dbs').innerText = d.length;
+        }
+
+        // === DATABASES ===
+        async function loadDatabases() {
+            currentDB = null;
+            document.getElementById('db-crumbs').innerHTML = '<span onclick="loadDatabases()">Databases</span>';
+            document.getElementById('db-header').innerHTML = '<h1>Databases</h1><p>Relational storage engine</p>';
+            document.getElementById('db-content').innerHTML = '<div id="db-list" class="grid"></div>';
+            const dbs = await (await fetch('/v1/databases')).json();
+            document.getElementById('db-list').innerHTML = dbs.map(d => `
+                <div class="card" style="cursor:pointer" onclick="drillToDB('${d.id}','${d.name}')">
+                    <p class="card-tag">Database</p>
+                    <div class="card-name">${d.name}</div>
+                    <span class="uid" onclick="event.stopPropagation();copyText('${d.id}')">${d.id.substring(0, 14)}</span>
+                    <button class="btn btn-danger btn-sm" style="position:absolute;top:1.2rem;right:1.2rem" onclick="event.stopPropagation();deleteDB('${d.id}')">Drop</button>
+                </div>
+            `).join('');
+        }
+
+        async function drillToDB(id, name) {
+            currentDB = { id, name };
+            document.getElementById('db-crumbs').innerHTML = `<span onclick="loadDatabases()">Databases</span><span class="sep">/</span><span>${name}</span>`;
+            document.getElementById('db-header').innerHTML = `<h1>${name}</h1><p><span class="uid" onclick="copyText('${id}')" style="margin-left:0">${id.substring(0, 18)}</span></p>`;
+            document.getElementById('db-content').innerHTML = `<div style="margin-bottom:1.5rem"><button class="btn btn-fill" onclick="openModal('create-col')">+ Collection</button></div><div id="col-list" class="grid"></div>`;
+            const cols = await (await fetch(`/v1/databases/${id}/collections`)).json();
+            document.getElementById('col-list').innerHTML = cols.map(c => `
+                <div class="card" style="cursor:pointer" onclick="drillToCol('${c.id}','${c.name}')">
+                    <p class="card-tag" style="color:var(--green)">Collection</p>
+                    <div class="card-name">${c.name}</div>
+                    <span class="uid" onclick="event.stopPropagation();copyText('${c.id}')">${c.id.substring(0, 14)}</span>
+                </div>
+            `).join('');
+        }
+
+        async function drillToCol(id, name) {
+            currentCol = { id, name };
+            document.getElementById('db-crumbs').innerHTML += `<span class="sep">/</span><span>${name}</span>`;
+            document.getElementById('db-header').innerHTML = `<h1>${name}</h1><p><span class="uid" onclick="copyText('${id}')" style="margin-left:0">${id.substring(0, 18)}</span></p>`;
+            document.getElementById('db-content').innerHTML = `
+                <div style="margin-bottom:1.2rem;display:flex;gap:8px"><button class="btn btn-fill" onclick="openModal('create-attr')">+ Attribute</button><button class="btn" onclick="openDocModal()">+ Document</button></div>
+                <div class="section-title" style="margin-bottom:0.8rem"><h1 style="font-size:1.2rem">Schema</h1></div>
+                <div id="attr-list" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.5rem"></div>
+                <div class="tbl"><table><thead><tr id="doc-thead"><th>ID</th><th>Created</th></tr></thead><tbody id="doc-list"></tbody></table></div>
+            `;
+            await loadColData(id);
+        }
+
+        async function loadColData(id) {
+            const attrs = await (await fetch(`/v1/databases/${currentDB.id}/collections/${id}/attributes`)).json();
+            document.getElementById('attr-list').innerHTML = attrs.map(a => `<span style="background:var(--surface);border:1px solid var(--border);padding:4px 10px;border-radius:8px;font-family:var(--mono);font-size:0.6rem;letter-spacing:0.5px">${a.key} <span style="color:var(--dim)">${a.type}</span></span>`).join('') || '<span style="color:var(--dim);font-size:0.7rem">No attributes defined yet.</span>';
+            document.getElementById('doc-thead').innerHTML = '<th>ID</th><th>Created</th>' + attrs.map(a => `<th>${a.key}</th>`).join('');
+            const docs = await (await fetch(`/v1/databases/${currentDB.id}/collections/${id}/documents`)).json();
+            document.getElementById('doc-list').innerHTML = docs.map(d => `<tr><td><span class="uid" onclick="copyText('${d.$id}')">${d.$id.substring(0, 8)}</span></td><td style="color:var(--gray);font-size:0.75rem">${d.$createdAt || ''}</td>${attrs.map(a => `<td>${d[a.key] !== undefined ? d[a.key] : ''}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${attrs.length + 2}" style="color:var(--dim);text-align:center">No documents yet.</td></tr>`;
+        }
+
+        async function openDocModal() {
+            const attrs = await (await fetch(`/v1/databases/${currentDB.id}/collections/${currentCol.id}/attributes`)).json();
+            document.getElementById('doc-fields').innerHTML = attrs.map(a => `<label style="font-family:var(--mono);font-size:0.5rem;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;display:block;margin-bottom:4px">${a.key} (${a.type})</label><input placeholder="${a.key}" data-key="${a.key}" data-type="${a.type}" class="doc-field-input" type="${a.type === 'integer' || a.type === 'float' ? 'number' : 'text'}">`).join('') || '<p style="color:var(--dim)">Add attributes first.</p>';
+            openModal('create-doc');
+        }
+
+        // === STORAGE ===
+        async function loadBuckets() {
+            currentBucket = null;
+            document.getElementById('storage-crumbs').innerHTML = '<span onclick="loadBuckets()">Buckets</span>';
+            document.getElementById('storage-header').innerHTML = '<h1>Storage</h1><p>Asset management</p>';
+            document.getElementById('storage-content').innerHTML = '<div id="bucket-list" class="grid"></div>';
+            const b = await (await fetch('/v1/storage/buckets')).json();
+            document.getElementById('bucket-list').innerHTML = b.map(b => `
+                <div class="card" style="cursor:pointer" onclick="drillToBucket('${b.id}','${b.name}')">
+                    <p class="card-tag">Bucket</p>
+                    <div class="card-name">${b.name}</div>
+                    <span class="uid" onclick="event.stopPropagation();copyText('${b.id}')">${b.id.substring(0, 14)}</span>
+                </div>
+            `).join('');
+        }
+
+        async function drillToBucket(id, name) {
+            currentBucket = { id, name };
+            document.getElementById('storage-crumbs').innerHTML = `<span onclick="loadBuckets()">Buckets</span><span class="sep">/</span><span>${name}</span>`;
+            document.getElementById('storage-header').innerHTML = `<h1>${name}</h1><p><span class="uid" onclick="copyText('${id}')" style="margin-left:0">${id.substring(0, 18)}</span></p>`;
+            document.getElementById('storage-content').innerHTML = `<div style="margin-bottom:1rem"><button class="btn btn-fill" onclick="openModal('upload-file')">+ Upload File</button></div><div class="tbl"><table><thead><tr><th>ID</th><th>Name</th><th>Size</th><th>Type</th><th></th></tr></thead><tbody id="file-explorer"></tbody></table></div>`;
+            const f = await (await fetch(`/v1/storage/buckets/${id}/files`)).json();
+            document.getElementById('file-explorer').innerHTML = f.map(f => `<tr><td><span class="uid" onclick="copyText('${f.id}')">${f.id.substring(0, 8)}</span></td><td>${f.name}</td><td style="color:var(--gray)">${(f.size / 1024).toFixed(1)}KB</td><td style="color:var(--dim)">${f.mimeType || '—'}</td><td><button class="btn btn-danger btn-sm" onclick="deleteFile('${f.id}')">Delete</button></td></tr>`).join('') || '<tr><td colspan="5" style="color:var(--dim);text-align:center">No files uploaded.</td></tr>';
+        }
+
+        // === FUNCTIONS ===
+        async function loadFunctions() {
+            const fns = await (await fetch('/v1/functions')).json();
+            document.getElementById('fn-list').innerHTML = fns.map(f => `
+                <div class="card">
+                    <p class="card-tag">Edge Function</p>
+                    <div class="card-name">${f.name}</div>
+                    <span class="uid" onclick="copyText('${f.id}')" style="margin-bottom:8px;display:inline-block">${f.id.substring(0, 14)}</span>
+                    <div class="code" style="font-size:0.6rem;height:45px;overflow:hidden">${f.code}</div>
+                    <div style="display:flex;gap:8px"><button class="btn btn-fill" style="flex:1" onclick="executeFn('${f.id}',this)">Execute</button><button class="btn btn-danger" style="flex:1" onclick="deleteFn('${f.id}')">Remove</button></div>
+                    <div id="fn-result-${f.id}" style="display:none;margin-top:8px"></div>
+                </div>
+            `).join('');
+        }
+
+        async function executeFn(id, btn) {
+            btn.innerText = 'Running...'; btn.disabled = true;
+            try {
+                const d = await (await fetch(`/v1/functions/${id}/executions`, { method: 'POST', body: JSON.stringify({ trigger: 'manual' }), headers: H })).json();
+                const el = document.getElementById('fn-result-' + id); el.style.display = 'block';
+                el.innerHTML = d.success ? `<div class="code" style="color:var(--green)">✓ ${JSON.stringify(d.result, null, 2)}</div>` : `<div class="code" style="color:var(--red)">✗ ${d.error}</div>`;
+            } catch (e) { const el = document.getElementById('fn-result-' + id); el.style.display = 'block'; el.innerHTML = `<div class="code" style="color:var(--red)">${e.message}</div>`; }
+            btn.innerText = 'Execute'; btn.disabled = false;
+        }
+
+        // === ANALYTICS ===
+        async function loadAnalytics() {
+            const a = await (await fetch('/v1/analytics/overview')).json();
+            document.getElementById('analytics-cards').innerHTML = `
+                <div class="card"><p class="stat-label">Total Requests</p><div class="stat-val">${a.totalRequests}</div></div>
+                <div class="card"><p class="stat-label">Today</p><div class="stat-val">${a.today}</div></div>
+                <div class="card"><p class="stat-label">Avg Latency</p><div class="stat-val" style="color:var(--red)">${a.avgLatency}ms</div></div>
+                <div class="card"><p class="stat-label">Errors (4xx/5xx)</p><div class="stat-val" style="color:${a.errorRate > 0 ? 'var(--red)' : 'var(--green)'}">${a.errorRate}</div></div>
+            `;
+            document.getElementById('top-endpoints').innerHTML = a.topEndpoints.map(e => `<tr><td style="font-family:var(--mono);font-size:0.7rem">${e.path}</td><td style="font-family:var(--dot);font-weight:700">${e.hits}</td></tr>`).join('');
+            const l = await (await fetch('/v1/analytics/logs')).json();
+            document.getElementById('request-logs').innerHTML = l.slice(0, 50).map(r => `<tr><td style="font-weight:600;color:${r.method === 'GET' ? 'var(--gray)' : 'var(--red)'}">${r.method}</td><td style="font-family:var(--mono);font-size:0.65rem">${r.path}</td><td style="color:${r.statusCode < 400 ? 'var(--green)' : 'var(--red)'}; font-family:var(--dot)">${r.statusCode}</td><td>${(r.responseTime || 0).toFixed(1)}</td><td style="font-size:0.65rem;color:var(--dim)">${r.timestamp}</td></tr>`).join('');
+        }
+
+        // === WEBSITES ===
+        async function loadWebsites() {
+            const s = await (await fetch('/v1/websites')).json();
+            document.getElementById('site-list').innerHTML = s.length ? s.map(s => `
+                <div class="card">
+                    <p class="card-tag" style="color:var(--green)">Website</p>
+                    <div class="card-name">${s.name}</div>
+                    <span class="uid" onclick="copyText('${s.id}')">${s.id.substring(0, 14)}</span>
+                    <hr class="divider" style="margin:1rem 0">
+                    <p style="font-size:0.72rem;color:var(--dim)">Domain: <span style="color:var(--white)">${s.domain}</span></p>
+                    <p style="font-size:0.72rem;color:var(--dim);margin-top:4px">Bucket: <span class="uid" onclick="copyText('${s.bucketId}')">${s.bucketId.substring(0, 10)}</span></p>
+                    <button class="btn btn-danger btn-sm" style="margin-top:1rem" onclick="deleteSite('${s.id}')">Remove</button>
+                </div>
+            `).join('') : '<div class="card"><p style="color:var(--dim)">No websites deployed yet.</p></div>';
+        }
+
+        // === API KEYS ===
+        async function loadKeys() {
+            const k = await (await fetch('/v1/keys')).json();
+            document.getElementById('key-list').innerHTML = k.length ? `<div class="tbl"><table><thead><tr><th>Name</th><th>Secret</th><th>Scope</th><th>Created</th><th></th></tr></thead><tbody>${k.map(k => `<tr><td style="font-weight:500">${k.name}</td><td><span class="uid" onclick="copyText('${k.secret}')">${k.secret.substring(0, 20)}...</span></td><td style="color:var(--dim)">${k.scopes}</td><td style="font-size:0.65rem;color:var(--dim)">${k.createdAt}</td><td><button class="btn btn-danger btn-sm" onclick="deleteKey('${k.id}')">Revoke</button></td></tr>`).join('')}</tbody></table></div>` : '';
+        }
+
+        // === HANDLERS ===
+        async function handleCreateDB() { await fetch('/v1/databases', { method: 'POST', headers: H, body: JSON.stringify({ name: document.getElementById('new-db-name').value }) }); closeModal(); loadDatabases(); }
+        async function handleCreateCol() { await fetch(`/v1/databases/${currentDB.id}/collections`, { method: 'POST', headers: H, body: JSON.stringify({ name: document.getElementById('new-col-name').value }) }); closeModal(); drillToDB(currentDB.id, currentDB.name); }
+        async function handleCreateBucket() { await fetch('/v1/storage/buckets', { method: 'POST', headers: H, body: JSON.stringify({ name: document.getElementById('new-bucket-name').value }) }); closeModal(); loadBuckets(); }
+        async function handleCreateFn() { await fetch('/v1/functions', { method: 'POST', headers: H, body: JSON.stringify({ name: document.getElementById('new-fn-name').value, code: document.getElementById('new-fn-code').value }) }); closeModal(); loadFunctions(); }
+        async function handleFileUpload() { const fd = new FormData(); fd.append('file', document.getElementById('file-input').files[0]); await fetch(`/v1/storage/buckets/${currentBucket.id}/files`, { method: 'POST', body: fd }); closeModal(); drillToBucket(currentBucket.id, currentBucket.name); loadPulse(); }
+        async function handleCreateAttr() { const k = document.getElementById('new-attr-key').value, t = document.getElementById('new-attr-type').value; await fetch(`/v1/databases/${currentDB.id}/collections/${currentCol.id}/attributes/string`, { method: 'POST', headers: H, body: JSON.stringify({ key: k, type: t, required: false }) }); closeModal(); document.getElementById('new-attr-key').value = ''; await loadColData(currentCol.id); }
+        async function handleCreateDoc() { const data = {}; document.querySelectorAll('.doc-field-input').forEach(i => { let v = i.value; if (i.dataset.type === 'integer') v = parseInt(v) || 0; if (i.dataset.type === 'float') v = parseFloat(v) || 0; data[i.dataset.key] = v; }); await fetch(`/v1/databases/${currentDB.id}/collections/${currentCol.id}/documents`, { method: 'POST', headers: H, body: JSON.stringify(data) }); closeModal(); await loadColData(currentCol.id); }
+        async function handleCreateKey() { const n = document.getElementById('new-key-name').value, s = document.getElementById('new-key-scope').value; const r = await (await fetch('/v1/keys', { method: 'POST', headers: H, body: JSON.stringify({ name: n, scopes: s }) })).json(); closeModal(); showToast('Key generated'); loadKeys(); }
+        async function handleCreateSite() { const n = document.getElementById('new-site-name').value, b = document.getElementById('new-site-bucket').value, d = document.getElementById('new-site-domain').value; await fetch('/v1/websites', { method: 'POST', headers: H, body: JSON.stringify({ name: n, bucketId: b, domain: d }) }); closeModal(); loadWebsites(); }
+
+        async function deleteDB(id) { if (confirm('Drop database?')) { await fetch(`/v1/databases/${id}`, { method: 'DELETE' }); loadDatabases(); } }
+        async function deleteFile(id) { if (confirm('Delete file?')) { await fetch(`/v1/storage/buckets/${currentBucket.id}/files/${id}`, { method: 'DELETE' }); drillToBucket(currentBucket.id, currentBucket.name); loadPulse(); } }
+        async function deleteFn(id) { if (confirm('Remove function?')) { await fetch(`/v1/functions/${id}`, { method: 'DELETE' }); loadFunctions(); } }
+        async function deleteKey(id) { if (confirm('Revoke key?')) { await fetch(`/v1/keys/${id}`, { method: 'DELETE' }); loadKeys(); } }
+        async function deleteSite(id) { if (confirm('Remove site?')) { await fetch(`/v1/websites/${id}`, { method: 'DELETE' }); loadWebsites(); } }
+
+        const _open = openModal;
+        openModal = async function (type) { _open(type); if (type === 'create-site') { const b = await (await fetch('/v1/storage/buckets')).json(); document.getElementById('new-site-bucket').innerHTML = b.map(b => `<option value="${b.id}">${b.name}</option>`).join(''); } };
+
+        loadPulse();
+    </script>
+</body>
+
+</html>
