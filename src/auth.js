@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 const db = require('./db');
 const crypto = require('crypto');
-const { v4: uuidv4 } = require('uuid');
 
 const SECRET = process.env.JWT_SECRET || 'appwrite-lite-secret-123';
 
@@ -10,7 +9,7 @@ function hashPassword(password) {
 }
 
 async function register(email, password, name) {
-    const id = uuidv4();
+    const id = crypto.randomUUID();
     const hashed = hashPassword(password);
 
     try {

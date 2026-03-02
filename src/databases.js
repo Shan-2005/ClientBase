@@ -1,14 +1,14 @@
 const db = require('./db');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 
 async function createDatabase(projectId, name) {
-    const id = uuidv4();
+    const id = crypto.randomUUID();
     db.prepare('INSERT INTO databases (id, projectId, name) VALUES (?, ?, ?)').run(id, projectId, name);
     return { id, name };
 }
 
 async function createCollection(databaseId, name) {
-    const id = uuidv4();
+    const id = crypto.randomUUID();
     db.prepare('INSERT INTO collections (id, databaseId, name) VALUES (?, ?, ?)').run(id, databaseId, name);
 
     // Create the physical table for this collection
@@ -26,7 +26,7 @@ async function createCollection(databaseId, name) {
 }
 
 async function createAttribute(collectionId, key, type, required) {
-    const id = uuidv4();
+    const id = crypto.randomUUID();
     db.prepare('INSERT INTO attributes (id, collectionId, key, type, required) VALUES (?, ?, ?, ?, ?)').run(id, collectionId, key, type, required ? 1 : 0);
 
     // Alter Table to add column
@@ -44,7 +44,7 @@ async function createAttribute(collectionId, key, type, required) {
 }
 
 async function createDocument(collectionId, data) {
-    const id = data.$id || uuidv4();
+    const id = data.$id || crypto.randomUUID();
     const collection = db.prepare('SELECT id FROM collections WHERE id = ?').get(collectionId);
     const tableName = `doc_${collection.id.replace(/-/g, '_')}`;
 

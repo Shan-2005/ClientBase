@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const db = require('./db');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 
 const storageDir = process.env.STORAGE_DIR || path.join(process.cwd(), 'storage');
 
@@ -34,7 +34,7 @@ async function saveFile(payload) {
     const bucket = db.prepare('SELECT * FROM buckets WHERE id = ?').get(bucketId);
     if (!bucket) throw new Error('Bucket not found');
 
-    const fileId = uuidv4();
+    const fileId = crypto.randomUUID();
     const filePath = path.join(storageDir, fileId);
 
     fs.writeFileSync(filePath, buffer);
@@ -48,7 +48,7 @@ async function saveFile(payload) {
 }
 
 async function createBucket(projectId, name, fileSizeLimit = null) {
-    const id = uuidv4();
+    const id = crypto.randomUUID();
     db.prepare('INSERT INTO buckets (id, projectId, name, fileSizeLimit) VALUES (?, ?, ?, ?)').run(id, projectId, name, fileSizeLimit);
     return { id, name };
 }

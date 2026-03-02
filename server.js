@@ -103,7 +103,7 @@ fastify.get('/v1/projects', async () => {
 
 fastify.post('/v1/projects', async (request) => {
     const { name } = request.body;
-    const id = require('uuid').v4();
+    const id = require('crypto').randomUUID();
     const apiKey = `secret-${id}`;
     db.prepare('INSERT INTO projects (id, name, apiKey) VALUES (?, ?, ?)').run(id, name, apiKey);
     return { id, name, apiKey };
@@ -116,7 +116,7 @@ fastify.get('/v1/keys', async (request) => {
 
 fastify.post('/v1/keys', async (request) => {
     const { name, scopes } = request.body;
-    const id = require('uuid').v4();
+    const id = require('crypto').randomUUID();
     const secret = `key-${id}`;
     db.prepare('INSERT INTO api_keys (id, projectId, name, secret, scopes) VALUES (?, ?, ?, ?, ?)').run(id, request.projectId, name, secret, scopes || 'all');
     return { id, name, secret, scopes: scopes || 'all' };
@@ -241,7 +241,7 @@ fastify.get('/v1/websites', async (request) => {
 
 fastify.post('/v1/websites', async (request) => {
     const { name, bucketId, domain } = request.body;
-    const id = require('uuid').v4();
+    const id = require('crypto').randomUUID();
     db.prepare('INSERT INTO websites (id, projectId, name, bucketId, domain) VALUES (?, ?, ?, ?, ?)').run(id, request.projectId, name, bucketId, domain || `${name}.local`);
     return { id, name, bucketId, domain: domain || `${name}.local` };
 });

@@ -1,9 +1,9 @@
 const { VM } = require('vm2');
 const db = require('./db');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 
 async function createFunction(projectId, name, code, runtime = 'nodejs-18') {
-    const id = uuidv4();
+    const id = crypto.randomUUID();
     db.prepare('INSERT INTO functions (id, projectId, name, runtime, code) VALUES (?, ?, ?, ?, ?)').run(id, projectId, name, runtime, code);
     return { id, name, runtime };
 }
