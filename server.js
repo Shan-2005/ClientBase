@@ -9,7 +9,7 @@ fastify.register(require('@fastify/multipart'), {
     limits: { fileSize: 100 * 1024 * 1024 }
 });
 fastify.register(require('@fastify/static'), {
-    root: path.join('D:', 'appwrite-clone', 'public'),
+    root: path.join(process.cwd(), 'public'),
     prefix: '/',
 });
 
@@ -251,16 +251,19 @@ fastify.delete('/v1/websites/:siteId', async (request) => {
     return { success: true };
 });
 
-// Start Server
-const start = async () => {
-    try {
-        const port = 3000;
-        await fastify.listen({ port, host: '0.0.0.0' });
-        console.log(`ClientBase v2.0 running at http://localhost:${port}`);
-    } catch (err) {
-        console.error(err);
-        process.exit(1);
-    }
-};
+// Only start the server if this file is run directly (not as a module)
+if (require.main === module) {
+    const start = async () => {
+        try {
+            const port = process.env.PORT || 3000;
+            await fastify.listen({ port, host: '0.0.0.0' });
+            console.log(`ClientBase v2.0 running at http://localhost:${port}`);
+        } catch (err) {
+            console.error(err);
+            process.exit(1);
+        }
+    };
+    start();
+}
 
-start();
+module.exports = fastify;

@@ -3,7 +3,7 @@ const path = require('path');
 const db = require('./db');
 const { v4: uuidv4 } = require('uuid');
 
-const storageDir = path.join('D:', 'appwrite-clone', 'storage');
+const storageDir = process.env.STORAGE_DIR || path.join(process.cwd(), 'storage');
 
 // Ensure storage directory exists
 if (!fs.existsSync(storageDir)) {
