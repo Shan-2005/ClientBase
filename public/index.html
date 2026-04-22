@@ -659,7 +659,7 @@
             <div class="nav-item" data-view="websites"><span class="nav-icon">◉</span> Websites</div>
             <div class="nav-item" data-view="keys"><span class="nav-icon">⚿</span> API Keys</div>
         </div>
-        <div class="sidebar-footer">D:\ SSD Cluster<br>v2.0 // Optimized</div>
+        <div class="sidebar-footer" id="env-tag">D:\ SSD Cluster<br>v2.0 // Optimized</div>
     </div>
 
     <!-- MAIN -->
@@ -1087,7 +1087,18 @@
         const _open = openModal;
         openModal = async function (type) { _open(type); if (type === 'create-site') { const b = await (await fetch('/v1/storage/buckets')).json(); document.getElementById('new-site-bucket').innerHTML = b.map(b => `<option value="${b.id}">${b.name}</option>`).join(''); } };
 
+        async function loadEnvironment() {
+            try {
+                const h = await (await fetch('/v1/health')).json();
+                if (h.environment === 'AWS App Runner') {
+                    document.getElementById('env-tag').innerHTML = `AWS App Runner<br>v2.0 // Optimized`;
+                    document.getElementById('env-tag').style.color = 'var(--green)';
+                }
+            } catch (e) {}
+        }
+
         loadPulse();
+        loadEnvironment();
     </script>
 </body>
 

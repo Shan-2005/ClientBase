@@ -88,7 +88,12 @@ fastify.addHook('preHandler', async (request, reply) => {
 // ============ API ROUTES ============
 
 // 0. Health & System
-fastify.get('/v1/health', async () => ({ status: 'ok', version: '2.0.0-clientbase', uptime: process.uptime() }));
+fastify.get('/v1/health', async () => ({ 
+    status: 'ok', 
+    version: '2.0.0-clientbase', 
+    uptime: process.uptime(),
+    environment: process.env.AWS_REGION ? 'AWS App Runner' : 'Local Dev'
+}));
 
 fastify.get('/v1/storage/usage', async () => {
     const used = await storage.getUsedStorage();
