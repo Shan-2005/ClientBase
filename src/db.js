@@ -75,6 +75,7 @@ db.exec(`
     bucketId TEXT,
     name TEXT,
     path TEXT,
+    data BLOB,
     size INTEGER,
     mimeType TEXT,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -102,5 +103,8 @@ db.exec(`
 db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)').run('storage_limit_bytes', (5 * 1024 * 1024 * 1024).toString());
 db.prepare('INSERT OR IGNORE INTO projects (id, name, apiKey) VALUES (?, ?, ?)').run('default', 'Default Project', 'master-key-ssd-secret');
 db.prepare('INSERT OR IGNORE INTO buckets (id, projectId, name) VALUES (?, ?, ?)').run('default', 'default', 'Default Bucket');
+
+// Migration: add 'data' BLOB column to files if it doesn't exist yet (for existing DBs)
+try { db.exec('ALTER TABLE files ADD COLUMN data BLOB'); } catch (_) { /* already exists */ }
 
 module.exports = db;

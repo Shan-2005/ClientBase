@@ -1,4 +1,4 @@
-const { VM } = require('vm2');
+const vm = require('vm'); // Built-in Node.js module — no install needed
 const db = require('./db');
 const crypto = require('crypto');
 
@@ -12,20 +12,24 @@ async function executeFunction(functionId, payload = {}) {
     const fn = db.prepare('SELECT * FROM functions WHERE id = ?').get(functionId);
     if (!fn) throw new Error('Function not found');
 
-    const vm = new VM({
-        timeout: 5000, // 5 seconds timeout
-        sandbox: {
-            req: payload,
-            res: {
-                json: (data) => data,
-                send: (data) => data
-            },
-            console: console // For debugging, can be restricted later
-        }
-    });
+    const sandbox = {
+        req: payload,
+        res: {
+            json: (data) => data,
+            send: (data) => data
+        },
+        console: {
+            log: (...args) => console.log('[fn]', ...args),
+            error: (...args) => console.error('[fn]', ...args),
+        },
+        result: undefined
+    };
+
+    const context = vm.createContext(sandbox);
 
     try {
-        const result = await vm.run(`(${fn.code})(req, res)`);
+        const raw = vm.runInContext(`(${fn.code})(req, res)`, context, { timeout: 5000 });
+        const result = await Promise.resolve(raw);
         return { success: true, result };
     } catch (err) {
         return { success: false, error: err.message };

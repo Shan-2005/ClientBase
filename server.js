@@ -87,6 +87,43 @@ fastify.addHook('preHandler', async (request, reply) => {
 
 // ============ API ROUTES ============
 
+// 0a. Authentication
+fastify.post('/v1/auth/register', async (request, reply) => {
+    const { email, password, name } = request.body;
+    try {
+        const user = await auth.register(email, password, name, request.projectId);
+        return user;
+    } catch (err) {
+        return reply.status(400).send({ error: err.message });
+    }
+});
+
+fastify.post('/v1/auth/login', async (request, reply) => {
+    const { email, password } = request.body;
+    try {
+        return await auth.login(email, password, request.projectId);
+    } catch (err) {
+        return reply.status(401).send({ error: err.message });
+    }
+});
+
+fastify.get('/v1/auth/me', async (request, reply) => {
+    const token = (request.headers.authorization || '').replace('Bearer ', '');
+    if (!token) return reply.status(401).send({ error: 'No token provided' });
+    try {
+        const payload = auth.verifyToken(token);
+        const user = db.prepare('SELECT id, email, name, createdAt FROM users WHERE id = ?').get(payload.id);
+        if (!user) return reply.status(404).send({ error: 'User not found' });
+        return user;
+    } catch (err) {
+        return reply.status(401).send({ error: 'Invalid or expired token' });
+    }
+});
+
+fastify.get('/v1/auth/users', async (request) => {
+    return db.prepare('SELECT id, email, name, createdAt FROM users WHERE projectId = ?').all(request.projectId);
+});
+
 // 0. Health & System
 fastify.get('/v1/health', async () => ({ 
     status: 'ok', 
@@ -205,6 +242,20 @@ fastify.delete('/v1/storage/buckets/:bucketId/files/:fileId', async (request) =>
     return { success: true };
 });
 
+// Download / view a file by its ID — serves raw bytes with correct MIME type
+fastify.get('/v1/storage/buckets/:bucketId/files/:fileId/view', async (request, reply) => {
+    const file = db.prepare('SELECT * FROM files WHERE id = ? AND bucketId = ?').get(
+        request.params.fileId,
+        request.params.bucketId
+    );
+    if (!file) return reply.status(404).send({ error: 'File not found' });
+    if (!file.data) return reply.status(404).send({ error: 'File data not available' });
+    reply.header('Content-Type', file.mimeType || 'application/octet-stream');
+    reply.header('Content-Disposition', `inline; filename="${file.name}"`);
+    reply.header('Content-Length', file.size);
+    return reply.send(Buffer.isBuffer(file.data) ? file.data : Buffer.from(file.data));
+});
+
 // 5. Functions
 fastify.post('/v1/functions', async (request) => {
     const { name, code } = request.body;
@@ -254,6 +305,46 @@ fastify.post('/v1/websites', async (request) => {
 fastify.delete('/v1/websites/:siteId', async (request) => {
     db.prepare('DELETE FROM websites WHERE id = ?').run(request.params.siteId);
     return { success: true };
+});
+
+// ============ WEBSITE HOSTING ============
+// Serve static files from the bucket linked to a deployed website.
+// Upload your HTML/CSS/JS to a bucket, deploy as a website, and browse it here.
+
+async function serveWebsiteFile(siteId, filePath, reply) {
+    const site = db.prepare('SELECT * FROM websites WHERE id = ?').get(siteId);
+    if (!site || !site.enabled) return reply.status(404).type('text/html').send('<h1>404 — Site not found</h1>');
+
+    // Normalise path — default to index.html
+    const fileName = (filePath || 'index.html').split('/').filter(Boolean).pop() || 'index.html';
+
+    // Try exact filename match in the bucket
+    let file = db.prepare('SELECT * FROM files WHERE bucketId = ? AND name = ?').get(site.bucketId, fileName);
+
+    // Fallback to index.html for SPA / directory requests
+    if (!file) {
+        file = db.prepare('SELECT * FROM files WHERE bucketId = ? AND name = ?').get(site.bucketId, 'index.html');
+    }
+
+    if (!file || !file.data) {
+        return reply.status(404).type('text/html').send(
+            `<h1>404 — No files found</h1><p>Upload files to bucket <code>${site.bucketId}</code> first.</p>`
+        );
+    }
+
+    reply.header('Content-Type', file.mimeType || 'text/html');
+    return reply.send(Buffer.isBuffer(file.data) ? file.data : Buffer.from(file.data));
+}
+
+// GET /sites/:siteId  → serves index.html
+fastify.get('/sites/:siteId', async (request, reply) => {
+    return serveWebsiteFile(request.params.siteId, 'index.html', reply);
+});
+
+// GET /sites/:siteId/about.html  → serves about.html
+// GET /sites/:siteId/css/style.css → serves style.css (by filename)
+fastify.get('/sites/:siteId/*', async (request, reply) => {
+    return serveWebsiteFile(request.params.siteId, request.params['*'], reply);
 });
 
 // Only start the server if this file is run directly (not as a module)

@@ -8,17 +8,17 @@ function hashPassword(password) {
     return crypto.createHash('sha256').update(password).digest('hex');
 }
 
-async function register(email, password, name) {
+async function register(email, password, name, projectId = 'default') {
     const id = crypto.randomUUID();
     const hashed = hashPassword(password);
 
     try {
         db.prepare(`
-      INSERT INTO users (id, email, password, name)
-      VALUES (?, ?, ?, ?)
-    `).run(id, email, hashed, name);
+      INSERT INTO users (id, projectId, email, password, name)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(id, projectId, email, hashed, name);
 
-        return { id, email, name };
+        return { id, email, name, projectId };
     } catch (err) {
         if (err.message.includes('UNIQUE')) {
             throw new Error('User already exists');
@@ -27,14 +27,14 @@ async function register(email, password, name) {
     }
 }
 
-async function login(email, password) {
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+async function login(email, password, projectId = 'default') {
+    const user = db.prepare('SELECT * FROM users WHERE email = ? AND projectId = ?').get(email, projectId);
     if (!user) throw new Error('Invalid credentials');
 
     const hashed = hashPassword(password);
     if (user.password !== hashed) throw new Error('Invalid credentials');
 
-    const token = jwt.sign({ id: user.id, email: user.email }, SECRET, { expiresIn: '24h' });
+    const token = jwt.sign({ id: user.id, email: user.email, projectId: user.projectId }, SECRET, { expiresIn: '24h' });
     return { token, user: { id: user.id, email: user.email, name: user.name } };
 }
 
