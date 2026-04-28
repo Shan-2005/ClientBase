@@ -76,10 +76,15 @@ async function deployFromGitHub(repoUrl, siteName, projectId, envVars = {}) {
                 const hasCRA = !!(pkg.dependencies?.['react-scripts']);
                 const hasNext = !!(pkg.dependencies?.next || pkg.devDependencies?.next);
 
-                if (hasNext) throw new Error('Next.js apps require server-side rendering and cannot be deployed as static sites. Use Vercel for Next.js projects.');
+                if (hasNext) throw new Error('Next.js requires server-side rendering. Use Vercel for Next.js projects.');
+
+                // Fix npm optional dependency bug (e.g. @tailwindcss/oxide native bindings)
+                // Removing package-lock.json + node_modules forces a clean install
+                try { fs.rmSync(path.join(tmpDir, 'package-lock.json'), { force: true }); } catch (_) {}
+                try { fs.rmSync(path.join(tmpDir, 'node_modules'), { recursive: true, force: true }); } catch (_) {}
 
                 // Install
-                execSync('npm install --legacy-peer-deps --prefer-offline', {
+                execSync('npm install --legacy-peer-deps', {
                     cwd: tmpDir, stdio: 'pipe', timeout: 180000,
                     env: { ...process.env, ...envVars }
                 });
@@ -95,7 +100,7 @@ async function deployFromGitHub(repoUrl, siteName, projectId, envVars = {}) {
                 });
 
                 // Find output folder
-                if (fs.existsSync(path.join(tmpDir, 'dist')))   outputDir = path.join(tmpDir, 'dist');
+                if (fs.existsSync(path.join(tmpDir, 'dist')))       outputDir = path.join(tmpDir, 'dist');
                 else if (fs.existsSync(path.join(tmpDir, 'build'))) outputDir = path.join(tmpDir, 'build');
                 else if (fs.existsSync(path.join(tmpDir, 'out')))   outputDir = path.join(tmpDir, 'out');
             }
