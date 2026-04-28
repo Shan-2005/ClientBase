@@ -78,15 +78,20 @@ async function deployFromGitHub(repoUrl, siteName, projectId, envVars = {}) {
 
                 if (hasNext) throw new Error('Next.js requires server-side rendering. Use Vercel for Next.js projects.');
 
-                // Fix npm optional dependency bug (e.g. @tailwindcss/oxide native bindings)
-                // Removing package-lock.json + node_modules forces a clean install
+                // Fix @tailwindcss/oxide + other native optional dep bugs:
+                // 1. Remove package-lock.json (locked to wrong platform from Windows checkout)
+                // 2. Remove stale node_modules
+                // 3. Write .npmrc to force Linux x64 glibc binary downloads
                 try { fs.rmSync(path.join(tmpDir, 'package-lock.json'), { force: true }); } catch (_) {}
                 try { fs.rmSync(path.join(tmpDir, 'node_modules'), { recursive: true, force: true }); } catch (_) {}
+                fs.writeFileSync(path.join(tmpDir, '.npmrc'),
+                    'os=linux\ncpu=x64\nlibc=glibc\nloglevel=error\n'
+                );
 
-                // Install
+                // Install with clean slate
                 execSync('npm install --legacy-peer-deps', {
                     cwd: tmpDir, stdio: 'pipe', timeout: 180000,
-                    env: { ...process.env, ...envVars }
+                    env: { ...process.env, ...envVars, npm_config_os: 'linux', npm_config_cpu: 'x64', npm_config_libc: 'glibc' }
                 });
 
                 // Build with relative base so paths work under /sites/:id/
