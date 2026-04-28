@@ -29,17 +29,29 @@ async function executeFunction(functionId, payload = {}) {
 
     const start = Date.now();
     try {
-        const raw = vm.runInContext(`(${fn.code})(req, res)`, context, { timeout: 5000 });
+        // Wrap user code as an async function body so they can write plain statements:
+        // const x = 1; return x;   ← works
+        // (req, res) => {}          ← also works (we detect and call it)
+        let wrappedCode;
+        const trimmed = fn.code.trim();
+        if (trimmed.startsWith('function') || trimmed.startsWith('async function') || trimmed.startsWith('(') || trimmed.startsWith('req =>') || trimmed.startsWith('async (')) {
+            // User wrote a function expression — call it directly
+            wrappedCode = `(${trimmed})(req, res)`;
+        } else {
+            // User wrote statements — wrap in async function body
+            wrappedCode = `(async (req, res) => { ${trimmed} })(req, res)`;
+        }
+        const raw = vm.runInContext(wrappedCode, context, { timeout: 5000 });
         const result = await Promise.resolve(raw);
         const duration = Date.now() - start;
         const logId = crypto.randomUUID();
         try { db.prepare('INSERT INTO execution_logs (id, functionId, status, response, duration) VALUES (?, ?, ?, ?, ?)').run(logId, functionId, 'completed', JSON.stringify(result), duration); } catch (_) {}
-        return { success: true, result };
+        return { success: true, status: 'completed', result, response: result, duration };
     } catch (err) {
         const duration = Date.now() - start;
-        const logId = crypto.randomUUID();
-        try { db.prepare('INSERT INTO execution_logs (id, functionId, status, response, duration) VALUES (?, ?, ?, ?, ?)').run(logId, functionId, 'failed', err.message, duration); } catch (_) {}
-        return { success: false, error: err.message };
+        const logId2 = crypto.randomUUID();
+        try { db.prepare('INSERT INTO execution_logs (id, functionId, status, response, duration) VALUES (?, ?, ?, ?, ?)').run(logId2, functionId, 'failed', err.message, duration); } catch (_) {}
+        return { success: false, status: 'failed', error: err.message, duration };
     }
 }
 
