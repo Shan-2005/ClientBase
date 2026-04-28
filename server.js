@@ -506,9 +506,9 @@ async function serveWebsiteFile(siteId, filePath, reply) {
     return reply.send(Buffer.isBuffer(file.data) ? file.data : Buffer.from(file.data));
 }
 
-// GET /sites/:siteId  → serves index.html
+// GET /sites/:siteId  → redirect to trailing slash so relative ./assets/ paths work
 fastify.get('/sites/:siteId', async (request, reply) => {
-    return serveWebsiteFile(request.params.siteId, 'index.html', reply);
+    return reply.redirect(301, `/sites/${request.params.siteId}/`);
 });
 
 // GET /sites/:siteId/about.html  → serves about.html

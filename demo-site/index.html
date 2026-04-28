@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClientBase Live Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: #1e1e2e;
+    --green: #00ff88;
+    --blue: #4e9eff;
+    --purple: #a855f7;
+    --red: #ff4757;
+    --yellow: #ffd32a;
+    --text: #e0e0f0;
+    --dim: #555570;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 1.2rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(17,17,24,0.8);
+    backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .logo { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.5px; }
+  .logo span { color: var(--green); }
+  .status-dot {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.75rem; font-family: var(--mono);
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--dim);
+    transition: background 0.3s;
+  }
+  .dot.live { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  .dot.error { background: var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ── Layout ── */
+  .container { max-width: 960px; margin: 0 auto; padding: 2rem; }
+
+  /* ── Hero ── */
+  .hero {
+    text-align: center;
+    padding: 3rem 0 2rem;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(0,255,136,0.08);
+    border: 1px solid rgba(0,255,136,0.2);
+    color: var(--green);
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 100px;
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 { font-size: 2.8rem; font-weight: 700; letter-spacing: -1px; line-height: 1.15; margin-bottom: 1rem; }
+  .hero h1 span { 
+    background: linear-gradient(135deg, var(--green), var(--blue));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero p { color: var(--dim); font-size: 1rem; max-width: 500px; margin: 0 auto 2rem; line-height: 1.6; }
+
+  /* ── Stats bar ── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+  .stat {
+    background: var(--card);
+    padding: 1.2rem;
+    text-align: center;
+  }
+  .stat-val { font-size: 1.6rem; font-weight: 700; font-family: var(--mono); color: var(--green); }
+  .stat-label { font-size: 0.65rem; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+  /* ── Grid ── */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  @media(max-width:640px){ .grid{grid-template-columns:1fr;} .stats{grid-template-columns:2fr 2fr;} .hero h1{font-size:2rem;} }
+
+  /* ── Card ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+  }
+  .card-title {
+    font-size: 0.65rem;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--dim);
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title::before {
+    content:''; width:6px; height:6px; border-radius:50%; background: var(--blue);
+  }
+
+  /* ── Forms ── */
+  input, textarea, select {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); padding: 10px 14px; border-radius: 8px;
+    font-family: inherit; font-size: 0.85rem; margin-bottom: 10px;
+    outline: none; transition: border 0.2s;
+  }
+  input:focus, textarea:focus { border-color: var(--green); }
+  button {
+    background: var(--green); color: #000; border: none;
+    padding: 10px 20px; border-radius: 8px;
+    font-family: inherit; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; transition: opacity 0.2s; width: 100%;
+  }
+  button:hover { opacity: 0.85; }
+  button.sec {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border);
+  }
+  button.sec:hover { border-color: var(--green); color: var(--green); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Messages feed ── */
+  .feed { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
+  .feed-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.82rem;
+  }
+  .feed-item .msg { color: var(--text); }
+  .feed-item .meta { color: var(--dim); font-size: 0.68rem; font-family: var(--mono); margin-top: 4px; }
+  .feed-empty { color: var(--dim); font-size: 0.8rem; text-align: center; padding: 2rem 0; }
+
+  /* ── Auth card ── */
+  .token-display {
+    font-family: var(--mono); font-size: 0.65rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 12px;
+    color: var(--green); word-break: break-all;
+    margin-bottom: 10px;
+  }
+  .user-info {
+    background: rgba(0,255,136,0.06);
+    border: 1px solid rgba(0,255,136,0.15);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 0.8rem;
+    margin-bottom: 10px;
+  }
+
+  /* ── Log ── */
+  .log {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    max-height: 200px;
+    overflow-y: auto;
+    line-height: 1.8;
+  }
+  .log-line { display: block; }
+  .log-line.ok { color: var(--green); }
+  .log-line.err { color: var(--red); }
+  .log-line.info { color: var(--blue); }
+  .log-line.warn { color: var(--yellow); }
+
+  /* ── API route showcase ── */
+  .routes { display: flex; flex-direction: column; gap: 6px; }
+  .route {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--mono); font-size: 0.7rem;
+  }
+  .method {
+    padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 0.6rem;
+    min-width: 42px; text-align: center;
+  }
+  .get  { background: rgba(78,158,255,0.15); color: var(--blue); }
+  .post { background: rgba(0,255,136,0.12); color: var(--green); }
+  .del  { background: rgba(255,71,87,0.12); color: var(--red); }
+  .patch{ background: rgba(255,211,42,0.12); color: var(--yellow); }
+  .route-path { color: var(--dim); flex:1; }
+  .route-check { color: var(--green); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Client<span>Base</span></div>
+  <div class="status-dot">
+    <div class="dot" id="status-dot"></div>
+    <span id="status-text">Connecting...</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Live Demo · Hosted on ClientBase</div>
+    <h1>Your Backend,<br><span>Running Right Now</span></h1>
+    <p>This page is hosted on ClientBase, talking to ClientBase's database and auth APIs — proving the whole stack works.</p>
+  </div>
+
+  <!-- Live Stats -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-val" id="stat-requests">—</div>
+      <div class="stat-label">Total Requests</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="stat-users">—</div>
+      <div class="stat-label">Users</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="stat-latency">—</div>
+      <div class="stat-label">Avg Latency (ms)</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="stat-uptime">—</div>
+      <div class="stat-label">Uptime (s)</div>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="grid">
+
+    <!-- Auth -->
+    <div class="card">
+      <div class="card-title">Auth · Register &amp; Login</div>
+      <div id="auth-logged-in" style="display:none">
+        <div class="user-info" id="user-info"></div>
+        <button class="sec" onclick="logout()">Sign Out</button>
+      </div>
+      <div id="auth-form">
+        <input id="auth-email" placeholder="Email" type="email">
+        <input id="auth-pass" placeholder="Password" type="password">
+        <div style="display:flex;gap:8px">
+          <button onclick="register()">Register</button>
+          <button class="sec" onclick="login()">Login</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Database — Post a message -->
+    <div class="card">
+      <div class="card-title">Database · Live Messages</div>
+      <input id="msg-author" placeholder="Your name">
+      <textarea id="msg-text" rows="2" placeholder="Type a message..."></textarea>
+      <button onclick="postMessage()">Post to ClientBase DB →</button>
+    </div>
+
+    <!-- Message Feed -->
+    <div class="card" style="grid-column: span 2">
+      <div class="card-title" style="justify-content:space-between;display:flex;align-items:center">
+        <span style="display:flex;align-items:center;gap:8px"><span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block"></span>MESSAGE FEED · LIVE FROM DATABASE</span>
+        <button class="sec" style="width:auto;padding:4px 12px;font-size:0.7rem" onclick="loadMessages()">↻ Refresh</button>
+      </div>
+      <div class="feed" id="feed"><div class="feed-empty">Loading messages from database...</div></div>
+    </div>
+
+    <!-- API Showcase -->
+    <div class="card">
+      <div class="card-title">API Routes · Active</div>
+      <div class="routes">
+        <div class="route"><span class="method get">GET</span><span class="route-path">/v1/health</span><span class="route-check">✓</span></div>
+        <div class="route"><span class="method post">POST</span><span class="route-path">/v1/auth/register</span><span class="route-check">✓</span></div>
+        <div class="route"><span class="method post">POST</span><span class="route-path">/v1/auth/login</span><span class="route-check">✓</span></div>
+        <div class="route"><span class="method get">GET</span><span class="route-path">/v1/databases</span><span class="route-check">✓</span></div>
+        <div class="route"><span class="method post">POST</span><span class="route-path">/v1/databases/:id/collections</span><span class="route-check">✓</span></div>
+        <div class="route"><span class="method post">POST</span><span class="route-path">/v1/storage/buckets</span><span class="route-check">✓</span></div>
+        <div class="route"><span class="method post">POST</span><span class="route-path">/v1/functions</span><span class="route-check">✓</span></div>
+        <div class="route"><span class="method get">GET</span><span class="route-path">/v1/teams</span><span class="route-check">✓</span></div>
+        <div class="route"><span class="method get">GET</span><span class="route-path">/v1/analytics/overview</span><span class="route-check">✓</span></div>
+        <div class="route"><span class="method get">GET</span><span class="route-path">/sites/:siteId/*</span><span class="route-check">✓</span></div>
+      </div>
+    </div>
+
+    <!-- Live Console -->
+    <div class="card">
+      <div class="card-title">Console · Live API Log</div>
+      <div class="log" id="log"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ─── Config ───────────────────────────────────────────────────────────────
+  const API = 'https://clientbase.onrender.com';
+  const H   = { 'Content-Type': 'application/json' };
+  let token = localStorage.getItem('cb_token') || null;
+  let currentUser = null;
+  let DB_ID = null, COL_ID = null;
+
+  // ─── Log ──────────────────────────────────────────────────────────────────
+  function log(msg, type = 'info') {
+    const el = document.getElementById('log');
+    const line = document.createElement('span');
+    line.className = `log-line ${type}`;
+    const t = new Date().toLocaleTimeString();
+    line.textContent = `[${t}] ${msg}`;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // ─── Status ───────────────────────────────────────────────────────────────
+  async function checkHealth() {
+    try {
+      const r = await fetch(`${API}/v1/health`);
+      const d = await r.json();
+      document.getElementById('status-dot').className = 'dot live';
+      document.getElementById('status-text').textContent = `Live · v${d.version}`;
+      document.getElementById('stat-uptime').textContent = Math.round(d.uptime);
+      log(`Health OK — uptime ${Math.round(d.uptime)}s`, 'ok');
+    } catch(e) {
+      document.getElementById('status-dot').className = 'dot error';
+      document.getElementById('status-text').textContent = 'Offline';
+      log(`Health check failed: ${e.message}`, 'err');
+    }
+  }
+
+  async function loadStats() {
+    try {
+      const [an, us] = await Promise.all([
+        fetch(`${API}/v1/analytics/overview`).then(r=>r.json()),
+        fetch(`${API}/v1/users`).then(r=>r.json())
+      ]);
+      document.getElementById('stat-requests').textContent = an.totalRequests;
+      document.getElementById('stat-users').textContent = us.length;
+      document.getElementById('stat-latency').textContent = an.avgLatency;
+      log(`Stats loaded — ${an.totalRequests} requests, ${us.length} users`, 'ok');
+    } catch(e) { log(`Stats error: ${e.message}`, 'err'); }
+  }
+
+  // ─── Auth ─────────────────────────────────────────────────────────────────
+  async function register() {
+    const email = document.getElementById('auth-email').value;
+    const pass  = document.getElementById('auth-pass').value;
+    if (!email || !pass) return alert('Fill in email and password');
+    log(`Registering ${email}...`, 'info');
+    const r = await fetch(`${API}/v1/auth/register`, { method:'POST', headers:H, body: JSON.stringify({ email, password: pass, name: email.split('@')[0] }) });
+    const d = await r.json();
+    if (d.error) { log(`Register failed: ${d.error}`, 'err'); return; }
+    log(`Registered: ${d.email}`, 'ok');
+    await login();
+  }
+
+  async function login() {
+    const email = document.getElementById('auth-email').value;
+    const pass  = document.getElementById('auth-pass').value;
+    log(`Logging in as ${email}...`, 'info');
+    const r = await fetch(`${API}/v1/auth/login`, { method:'POST', headers:H, body: JSON.stringify({ email, password: pass }) });
+    const d = await r.json();
+    if (d.error) { log(`Login failed: ${d.error}`, 'err'); return; }
+    token = d.token;
+    currentUser = d.user;
+    localStorage.setItem('cb_token', token);
+    log(`Logged in as ${d.user.email} ✓`, 'ok');
+    showUser(d.user);
+    loadStats();
+  }
+
+  async function logout() {
+    token = null; currentUser = null;
+    localStorage.removeItem('cb_token');
+    document.getElementById('auth-logged-in').style.display = 'none';
+    document.getElementById('auth-form').style.display = '';
+    log('Signed out', 'warn');
+  }
+
+  function showUser(user) {
+    document.getElementById('auth-logged-in').style.display = '';
+    document.getElementById('auth-form').style.display = 'none';
+    document.getElementById('user-info').innerHTML =
+      `👤 <strong>${user.name}</strong><br><span style="color:var(--dim);font-size:0.75rem">${user.email}</span><br><span style="color:var(--green);font-family:var(--mono);font-size:0.65rem">Authenticated ✓</span>`;
+  }
+
+  async function restoreSession() {
+    if (!token) return;
+    try {
+      const r = await fetch(`${API}/v1/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+      const d = await r.json();
+      if (d.id) { currentUser = d; showUser(d); log(`Session restored: ${d.email}`, 'ok'); }
+      else { token = null; localStorage.removeItem('cb_token'); }
+    } catch(e) {}
+  }
+
+  // ─── Database setup (auto-create if needed) ────────────────────────────────
+  async function setupDB() {
+    log('Setting up demo database...', 'info');
+    try {
+      // Get or create DB
+      let dbs = await fetch(`${API}/v1/databases`).then(r=>r.json());
+      let db = dbs.find(d => d.name === 'demo-db');
+      if (!db) {
+        db = await fetch(`${API}/v1/databases`, { method:'POST', headers:H, body: JSON.stringify({ name: 'demo-db' }) }).then(r=>r.json());
+        log('Created demo-db ✓', 'ok');
+      }
+      DB_ID = db.id;
+
+      // Get or create Collection
+      let cols = await fetch(`${API}/v1/databases/${DB_ID}/collections`).then(r=>r.json());
+      let col = cols.find(c => c.name === 'messages');
+      if (!col) {
+        col = await fetch(`${API}/v1/databases/${DB_ID}/collections`, { method:'POST', headers:H, body: JSON.stringify({ name: 'messages' }) }).then(r=>r.json());
+        // Add attributes
+        await fetch(`${API}/v1/databases/${DB_ID}/collections/${col.id}/attributes/string`, { method:'POST', headers:H, body: JSON.stringify({ key:'author', type:'string', required:false }) });
+        await fetch(`${API}/v1/databases/${DB_ID}/collections/${col.id}/attributes/string`, { method:'POST', headers:H, body: JSON.stringify({ key:'message', type:'string', required:false }) });
+        log('Created messages collection ✓', 'ok');
+      }
+      COL_ID = col.id;
+      log(`DB ready — ID: ${DB_ID.substring(0,8)}...`, 'ok');
+      loadMessages();
+    } catch(e) { log(`DB setup error: ${e.message}`, 'err'); }
+  }
+
+  async function loadMessages() {
+    if (!DB_ID || !COL_ID) return;
+    try {
+      const docs = await fetch(`${API}/v1/databases/${DB_ID}/collections/${COL_ID}/documents?orderDir=DESC&limit=20`).then(r=>r.json());
+      const feed = document.getElementById('feed');
+      if (!docs.length) {
+        feed.innerHTML = '<div class="feed-empty">No messages yet — post the first one! ↑</div>';
+        return;
+      }
+      feed.innerHTML = docs.map(d => `
+        <div class="feed-item">
+          <div class="msg">${d.message || '(empty)'}</div>
+          <div class="meta">— ${d.author || 'Anonymous'} · ${d.$id.substring(0,8)}</div>
+        </div>
+      `).join('');
+    } catch(e) { log(`Load messages error: ${e.message}`, 'err'); }
+  }
+
+  async function postMessage() {
+    if (!DB_ID || !COL_ID) { log('DB not ready yet', 'warn'); return; }
+    const author  = document.getElementById('msg-author').value || 'Anonymous';
+    const message = document.getElementById('msg-text').value;
+    if (!message.trim()) return alert('Type a message first');
+    log(`Posting message to DB...`, 'info');
+    try {
+      await fetch(`${API}/v1/databases/${DB_ID}/collections/${COL_ID}/documents`, {
+        method: 'POST', headers: H,
+        body: JSON.stringify({ author, message })
+      });
+      document.getElementById('msg-text').value = '';
+      log('Message saved to ClientBase DB ✓', 'ok');
+      await loadMessages();
+      await loadStats();
+    } catch(e) { log(`Post error: ${e.message}`, 'err'); }
+  }
+
+  // ─── Init ─────────────────────────────────────────────────────────────────
+  (async () => {
+    log('ClientBase Demo initialising...', 'info');
+    await checkHealth();
+    await restoreSession();
+    await loadStats();
+    await setupDB();
+    // Refresh stats every 30s
+    setInterval(loadStats, 30000);
+    setInterval(loadMessages, 15000);
+  })();
+</script>
+</body>
+</html>
