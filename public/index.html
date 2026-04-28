@@ -950,6 +950,7 @@
                     <p class="card-tag" style="color:var(--green)">Collection</p>
                     <div class="card-name">${c.name}</div>
                     <span class="uid" onclick="event.stopPropagation();copyText('${c.id}')">${c.id.substring(0, 14)}</span>
+                    <button class="btn btn-danger btn-sm" style="position:absolute;top:1.2rem;right:1.2rem" onclick="event.stopPropagation();deleteCol('${c.id}')">Drop</button>
                 </div>
             `).join('');
         }
@@ -969,10 +970,10 @@
 
         async function loadColData(id) {
             const attrs = await (await fetch(`/v1/databases/${currentDB.id}/collections/${id}/attributes`)).json();
-            document.getElementById('attr-list').innerHTML = attrs.map(a => `<span style="background:var(--surface);border:1px solid var(--border);padding:4px 10px;border-radius:8px;font-family:var(--mono);font-size:0.6rem;letter-spacing:0.5px">${a.key} <span style="color:var(--dim)">${a.type}</span></span>`).join('') || '<span style="color:var(--dim);font-size:0.7rem">No attributes defined yet.</span>';
-            document.getElementById('doc-thead').innerHTML = '<th>ID</th><th>Created</th>' + attrs.map(a => `<th>${a.key}</th>`).join('');
+            document.getElementById('attr-list').innerHTML = attrs.map(a => `<span style="background:var(--surface);border:1px solid var(--border);padding:4px 10px;border-radius:8px;font-family:var(--mono);font-size:0.6rem;letter-spacing:0.5px">${a.key} <span style="color:var(--dim)">${a.type}</span> <span style="color:var(--red);cursor:pointer;margin-left:4px" onclick="deleteAttr('${a.key}')" title="Delete">✕</span></span>`).join('') || '<span style="color:var(--dim);font-size:0.7rem">No attributes defined yet.</span>';
+            document.getElementById('doc-thead').innerHTML = '<th>ID</th><th>Created</th>' + attrs.map(a => `<th>${a.key}</th>`).join('') + '<th></th>';
             const docs = await (await fetch(`/v1/databases/${currentDB.id}/collections/${id}/documents`)).json();
-            document.getElementById('doc-list').innerHTML = docs.map(d => `<tr><td><span class="uid" onclick="copyText('${d.$id}')">${d.$id.substring(0, 8)}</span></td><td style="color:var(--gray);font-size:0.75rem">${d.$createdAt || ''}</td>${attrs.map(a => `<td>${d[a.key] !== undefined ? d[a.key] : ''}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${attrs.length + 2}" style="color:var(--dim);text-align:center">No documents yet.</td></tr>`;
+            document.getElementById('doc-list').innerHTML = docs.map(d => `<tr><td><span class="uid" onclick="copyText('${d.$id}')">${d.$id.substring(0, 8)}</span></td><td style="color:var(--gray);font-size:0.75rem">${d.$createdAt || ''}</td>${attrs.map(a => `<td>${d[a.key] !== undefined ? d[a.key] : ''}</td>`).join('')}<td><button class="btn btn-danger btn-sm" onclick="deleteDoc('${d.$id}')">Del</button></td></tr>`).join('') || `<tr><td colspan="${attrs.length + 3}" style="color:var(--dim);text-align:center">No documents yet.</td></tr>`;
         }
 
         async function openDocModal() {
@@ -1003,7 +1004,7 @@
             document.getElementById('storage-header').innerHTML = `<h1>${name}</h1><p><span class="uid" onclick="copyText('${id}')" style="margin-left:0">${id.substring(0, 18)}</span></p>`;
             document.getElementById('storage-content').innerHTML = `<div style="margin-bottom:1rem"><button class="btn btn-fill" onclick="openModal('upload-file')">+ Upload File</button></div><div class="tbl"><table><thead><tr><th>ID</th><th>Name</th><th>Size</th><th>Type</th><th></th></tr></thead><tbody id="file-explorer"></tbody></table></div>`;
             const f = await (await fetch(`/v1/storage/buckets/${id}/files`)).json();
-            document.getElementById('file-explorer').innerHTML = f.map(f => `<tr><td><span class="uid" onclick="copyText('${f.id}')">${f.id.substring(0, 8)}</span></td><td>${f.name}</td><td style="color:var(--gray)">${(f.size / 1024).toFixed(1)}KB</td><td style="color:var(--dim)">${f.mimeType || '—'}</td><td><button class="btn btn-danger btn-sm" onclick="deleteFile('${f.id}')">Delete</button></td></tr>`).join('') || '<tr><td colspan="5" style="color:var(--dim);text-align:center">No files uploaded.</td></tr>';
+            document.getElementById('file-explorer').innerHTML = f.map(f => `<tr><td><span class="uid" onclick="copyText('${f.id}')">${f.id.substring(0, 8)}</span></td><td>${f.name}</td><td style="color:var(--gray)">${(f.size / 1024).toFixed(1)}KB</td><td style="color:var(--dim)">${f.mimeType || '—'}</td><td style="display:flex;gap:4px"><a href="/v1/storage/buckets/${currentBucket.id}/files/${f.id}/view" target="_blank" class="btn btn-sm">View</a><a href="/v1/storage/buckets/${currentBucket.id}/files/${f.id}/download" class="btn btn-sm">↓</a><button class="btn btn-danger btn-sm" onclick="deleteFile('${f.id}')">Del</button></td></tr>`).join('') || '<tr><td colspan="5" style="color:var(--dim);text-align:center">No files uploaded.</td></tr>';
         }
 
         // === FUNCTIONS ===
@@ -1054,9 +1055,11 @@
                     <div class="card-name">${s.name}</div>
                     <span class="uid" onclick="copyText('${s.id}')">${s.id.substring(0, 14)}</span>
                     <hr class="divider" style="margin:1rem 0">
-                    <p style="font-size:0.72rem;color:var(--dim)">Domain: <span style="color:var(--white)">${s.domain}</span></p>
-                    <p style="font-size:0.72rem;color:var(--dim);margin-top:4px">Bucket: <span class="uid" onclick="copyText('${s.bucketId}')">${s.bucketId.substring(0, 10)}</span></p>
-                    <button class="btn btn-danger btn-sm" style="margin-top:1rem" onclick="deleteSite('${s.id}')">Remove</button>
+                    <p style="font-size:0.72rem;color:var(--dim)">Bucket: <span class="uid" onclick="copyText('${s.bucketId}')">${s.bucketId.substring(0, 10)}</span></p>
+                    <div style="display:flex;gap:8px;margin-top:1rem">
+                        <a href="/sites/${s.id}" target="_blank" class="btn btn-fill" style="flex:1;text-align:center;text-decoration:none">Open Site ↗</a>
+                        <button class="btn btn-danger" style="flex:1" onclick="deleteSite('${s.id}')">Remove</button>
+                    </div>
                 </div>
             `).join('') : '<div class="card"><p style="color:var(--dim)">No websites deployed yet.</p></div>';
         }
@@ -1079,6 +1082,9 @@
         async function handleCreateSite() { const n = document.getElementById('new-site-name').value, b = document.getElementById('new-site-bucket').value, d = document.getElementById('new-site-domain').value; await fetch('/v1/websites', { method: 'POST', headers: H, body: JSON.stringify({ name: n, bucketId: b, domain: d }) }); closeModal(); loadWebsites(); }
 
         async function deleteDB(id) { if (confirm('Drop database?')) { await fetch(`/v1/databases/${id}`, { method: 'DELETE' }); loadDatabases(); } }
+        async function deleteCol(id) { if (confirm('Drop collection and all its documents?')) { await fetch(`/v1/databases/${currentDB.id}/collections/${id}`, { method: 'DELETE' }); drillToDB(currentDB.id, currentDB.name); } }
+        async function deleteAttr(key) { if (confirm(`Delete attribute "${key}"?`)) { await fetch(`/v1/databases/${currentDB.id}/collections/${currentCol.id}/attributes/${key}`, { method: 'DELETE' }); loadColData(currentCol.id); } }
+        async function deleteDoc(id) { if (confirm('Delete document?')) { await fetch(`/v1/databases/${currentDB.id}/collections/${currentCol.id}/documents/${id}`, { method: 'DELETE' }); loadColData(currentCol.id); } }
         async function deleteFile(id) { if (confirm('Delete file?')) { await fetch(`/v1/storage/buckets/${currentBucket.id}/files/${id}`, { method: 'DELETE' }); drillToBucket(currentBucket.id, currentBucket.name); loadPulse(); } }
         async function deleteFn(id) { if (confirm('Remove function?')) { await fetch(`/v1/functions/${id}`, { method: 'DELETE' }); loadFunctions(); } }
         async function deleteKey(id) { if (confirm('Revoke key?')) { await fetch(`/v1/keys/${id}`, { method: 'DELETE' }); loadKeys(); } }
@@ -1092,6 +1098,9 @@
                 const h = await (await fetch('/v1/health')).json();
                 if (h.environment === 'AWS App Runner') {
                     document.getElementById('env-tag').innerHTML = `AWS App Runner<br>v2.0 // Optimized`;
+                    document.getElementById('env-tag').style.color = 'var(--green)';
+                } else if (window.location.hostname.includes('onrender.com') || window.location.hostname.includes('render.com')) {
+                    document.getElementById('env-tag').innerHTML = `Render Cloud<br>v2.0 // Live`;
                     document.getElementById('env-tag').style.color = 'var(--green)';
                 }
             } catch (e) {}

@@ -27,11 +27,18 @@ async function executeFunction(functionId, payload = {}) {
 
     const context = vm.createContext(sandbox);
 
+    const start = Date.now();
     try {
         const raw = vm.runInContext(`(${fn.code})(req, res)`, context, { timeout: 5000 });
         const result = await Promise.resolve(raw);
+        const duration = Date.now() - start;
+        const logId = crypto.randomUUID();
+        try { db.prepare('INSERT INTO execution_logs (id, functionId, status, response, duration) VALUES (?, ?, ?, ?, ?)').run(logId, functionId, 'completed', JSON.stringify(result), duration); } catch (_) {}
         return { success: true, result };
     } catch (err) {
+        const duration = Date.now() - start;
+        const logId = crypto.randomUUID();
+        try { db.prepare('INSERT INTO execution_logs (id, functionId, status, response, duration) VALUES (?, ?, ?, ?, ?)').run(logId, functionId, 'failed', err.message, duration); } catch (_) {}
         return { success: false, error: err.message };
     }
 }

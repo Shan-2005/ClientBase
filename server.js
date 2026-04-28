@@ -124,6 +124,94 @@ fastify.get('/v1/auth/users', async (request) => {
     return db.prepare('SELECT id, email, name, createdAt FROM users WHERE projectId = ?').all(request.projectId);
 });
 
+// Sessions
+fastify.get('/v1/account/sessions', async (request, reply) => {
+    const token = (request.headers.authorization || '').replace('Bearer ', '');
+    if (!token) return reply.status(401).send({ error: 'No token' });
+    try { const p = auth.verifyToken(token); return db.prepare('SELECT id, createdAt, expiresAt FROM sessions WHERE userId = ?').all(p.id); }
+    catch (e) { return reply.status(401).send({ error: 'Invalid token' }); }
+});
+
+fastify.delete('/v1/account/sessions', async (request, reply) => {
+    const token = (request.headers.authorization || '').replace('Bearer ', '');
+    if (!token) return reply.status(401).send({ error: 'No token' });
+    try { const p = auth.verifyToken(token); db.prepare('DELETE FROM sessions WHERE userId = ?').run(p.id); return { success: true }; }
+    catch (e) { return reply.status(401).send({ error: 'Invalid token' }); }
+});
+
+fastify.delete('/v1/account/sessions/:sessionId', async (request) => {
+    db.prepare('DELETE FROM sessions WHERE id = ?').run(request.params.sessionId);
+    return { success: true };
+});
+
+fastify.patch('/v1/account/name', async (request, reply) => {
+    const token = (request.headers.authorization || '').replace('Bearer ', '');
+    if (!token) return reply.status(401).send({ error: 'No token' });
+    try { const p = auth.verifyToken(token); db.prepare('UPDATE users SET name = ? WHERE id = ?').run(request.body.name, p.id); return { success: true }; }
+    catch (e) { return reply.status(401).send({ error: 'Invalid token' }); }
+});
+
+// Users API (server-side)
+fastify.get('/v1/users', async (request) => {
+    return db.prepare('SELECT id, email, name, createdAt FROM users WHERE projectId = ?').all(request.projectId);
+});
+
+fastify.get('/v1/users/:userId', async (request, reply) => {
+    const u = db.prepare('SELECT id, email, name, createdAt FROM users WHERE id = ?').get(request.params.userId);
+    return u || reply.status(404).send({ error: 'User not found' });
+});
+
+fastify.patch('/v1/users/:userId', async (request) => {
+    const { name, email } = request.body;
+    if (name) db.prepare('UPDATE users SET name = ? WHERE id = ?').run(name, request.params.userId);
+    if (email) db.prepare('UPDATE users SET email = ? WHERE id = ?').run(email, request.params.userId);
+    return db.prepare('SELECT id, email, name, createdAt FROM users WHERE id = ?').get(request.params.userId);
+});
+
+fastify.delete('/v1/users/:userId', async (request) => {
+    db.prepare('DELETE FROM sessions WHERE userId = ?').run(request.params.userId);
+    db.prepare('DELETE FROM users WHERE id = ?').run(request.params.userId);
+    return { success: true };
+});
+
+// Teams
+fastify.post('/v1/teams', async (request) => {
+    const id = require('crypto').randomUUID();
+    db.prepare('INSERT INTO teams (id, projectId, name) VALUES (?, ?, ?)').run(id, request.projectId, request.body.name);
+    return { id, name: request.body.name };
+});
+
+fastify.get('/v1/teams', async (request) => {
+    return db.prepare('SELECT * FROM teams WHERE projectId = ?').all(request.projectId);
+});
+
+fastify.get('/v1/teams/:teamId', async (request, reply) => {
+    const t = db.prepare('SELECT * FROM teams WHERE id = ?').get(request.params.teamId);
+    return t || reply.status(404).send({ error: 'Team not found' });
+});
+
+fastify.delete('/v1/teams/:teamId', async (request) => {
+    db.prepare('DELETE FROM memberships WHERE teamId = ?').run(request.params.teamId);
+    db.prepare('DELETE FROM teams WHERE id = ?').run(request.params.teamId);
+    return { success: true };
+});
+
+fastify.post('/v1/teams/:teamId/memberships', async (request) => {
+    const id = require('crypto').randomUUID();
+    const { userId, roles } = request.body;
+    db.prepare('INSERT INTO memberships (id, teamId, userId, roles) VALUES (?, ?, ?, ?)').run(id, request.params.teamId, userId, roles || 'member');
+    return { id, teamId: request.params.teamId, userId, roles: roles || 'member' };
+});
+
+fastify.get('/v1/teams/:teamId/memberships', async (request) => {
+    return db.prepare('SELECT m.*, u.email, u.name FROM memberships m LEFT JOIN users u ON m.userId = u.id WHERE m.teamId = ?').all(request.params.teamId);
+});
+
+fastify.delete('/v1/teams/:teamId/memberships/:membershipId', async (request) => {
+    db.prepare('DELETE FROM memberships WHERE id = ?').run(request.params.membershipId);
+    return { success: true };
+});
+
 // 0. Health & System
 fastify.get('/v1/health', async () => ({ 
     status: 'ok', 
@@ -205,7 +293,34 @@ fastify.post('/v1/databases/:dbId/collections/:colId/documents', async (request)
 });
 
 fastify.get('/v1/databases/:dbId/collections/:colId/documents', async (request) => {
-    return await databases.listDocuments(request.params.colId);
+    const { limit, offset, orderBy, orderDir } = request.query;
+    return await databases.listDocuments(request.params.colId, {
+        limit: limit ? parseInt(limit) : 25,
+        offset: offset ? parseInt(offset) : 0,
+        orderBy: orderBy || '$createdAt',
+        orderDir: orderDir || 'ASC'
+    });
+});
+
+fastify.get('/v1/databases/:dbId/collections/:colId/documents/:docId', async (request, reply) => {
+    const doc = await databases.getDocument(request.params.colId, request.params.docId);
+    return doc || reply.status(404).send({ error: 'Document not found' });
+});
+
+fastify.patch('/v1/databases/:dbId/collections/:colId/documents/:docId', async (request) => {
+    return await databases.updateDocument(request.params.colId, request.params.docId, request.body);
+});
+
+fastify.delete('/v1/databases/:dbId/collections/:colId/documents/:docId', async (request) => {
+    return await databases.deleteDocument(request.params.colId, request.params.docId);
+});
+
+fastify.delete('/v1/databases/:dbId/collections/:colId', async (request) => {
+    return await databases.deleteCollection(request.params.colId);
+});
+
+fastify.delete('/v1/databases/:dbId/collections/:colId/attributes/:key', async (request) => {
+    return await databases.deleteAttribute(request.params.colId, request.params.key);
 });
 
 // 4. Storage
@@ -215,6 +330,28 @@ fastify.post('/v1/storage/buckets', async (request) => {
 
 fastify.get('/v1/storage/buckets', async (request) => {
     return db.prepare('SELECT * FROM buckets WHERE projectId = ?').all(request.projectId);
+});
+
+fastify.delete('/v1/storage/buckets/:bucketId', async (request) => {
+    const files = db.prepare('SELECT id FROM files WHERE bucketId = ?').all(request.params.bucketId);
+    for (const f of files) await storage.deleteFile(f.id);
+    db.prepare('DELETE FROM websites WHERE bucketId = ?').run(request.params.bucketId);
+    db.prepare('DELETE FROM buckets WHERE id = ?').run(request.params.bucketId);
+    return { success: true };
+});
+
+fastify.get('/v1/storage/buckets/:bucketId/files/:fileId', async (request, reply) => {
+    const f = db.prepare('SELECT id, bucketId, name, size, mimeType, createdAt FROM files WHERE id = ? AND bucketId = ?').get(request.params.fileId, request.params.bucketId);
+    return f || reply.status(404).send({ error: 'File not found' });
+});
+
+fastify.get('/v1/storage/buckets/:bucketId/files/:fileId/download', async (request, reply) => {
+    const file = db.prepare('SELECT * FROM files WHERE id = ? AND bucketId = ?').get(request.params.fileId, request.params.bucketId);
+    if (!file || !file.data) return reply.status(404).send({ error: 'File not found' });
+    reply.header('Content-Type', file.mimeType || 'application/octet-stream');
+    reply.header('Content-Disposition', `attachment; filename="${file.name}"`);
+    reply.header('Content-Length', file.size);
+    return reply.send(Buffer.isBuffer(file.data) ? file.data : Buffer.from(file.data));
 });
 
 fastify.get('/v1/storage/buckets/:bucketId/files', async (request) => {
@@ -270,9 +407,26 @@ fastify.post('/v1/functions/:fnId/executions', async (request) => {
     return await functions.executeFunction(request.params.fnId, request.body);
 });
 
+fastify.get('/v1/functions/:fnId', async (request, reply) => {
+    const fn = db.prepare('SELECT * FROM functions WHERE id = ?').get(request.params.fnId);
+    return fn || reply.status(404).send({ error: 'Function not found' });
+});
+
+fastify.patch('/v1/functions/:fnId', async (request) => {
+    const { name, code } = request.body;
+    if (name) db.prepare('UPDATE functions SET name = ? WHERE id = ?').run(name, request.params.fnId);
+    if (code) db.prepare('UPDATE functions SET code = ? WHERE id = ?').run(code, request.params.fnId);
+    return db.prepare('SELECT * FROM functions WHERE id = ?').get(request.params.fnId);
+});
+
 fastify.delete('/v1/functions/:fnId', async (request) => {
+    db.prepare('DELETE FROM execution_logs WHERE functionId = ?').run(request.params.fnId);
     db.prepare('DELETE FROM functions WHERE id = ?').run(request.params.fnId);
     return { success: true };
+});
+
+fastify.get('/v1/functions/:fnId/executions', async (request) => {
+    return db.prepare('SELECT * FROM execution_logs WHERE functionId = ? ORDER BY createdAt DESC LIMIT 20').all(request.params.fnId);
 });
 
 // 6. Analytics

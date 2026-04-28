@@ -107,4 +107,44 @@ db.prepare('INSERT OR IGNORE INTO buckets (id, projectId, name) VALUES (?, ?, ?)
 // Migration: add 'data' BLOB column to files if it doesn't exist yet (for existing DBs)
 try { db.exec('ALTER TABLE files ADD COLUMN data BLOB'); } catch (_) { /* already exists */ }
 
+// Sessions, Teams, Memberships, Execution Logs
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sessions (
+    id TEXT PRIMARY KEY,
+    userId TEXT,
+    projectId TEXT,
+    token TEXT UNIQUE,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expiresAt DATETIME,
+    FOREIGN KEY(userId) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS teams (
+    id TEXT PRIMARY KEY,
+    projectId TEXT,
+    name TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS memberships (
+    id TEXT PRIMARY KEY,
+    teamId TEXT,
+    userId TEXT,
+    roles TEXT DEFAULT 'member',
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(teamId) REFERENCES teams(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS execution_logs (
+    id TEXT PRIMARY KEY,
+    functionId TEXT,
+    status TEXT,
+    response TEXT,
+    duration REAL,
+    trigger TEXT DEFAULT 'manual',
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(functionId) REFERENCES functions(id)
+  );
+`);
+
 module.exports = db;
