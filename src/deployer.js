@@ -88,11 +88,29 @@ async function deployFromGitHub(repoUrl, siteName, projectId, envVars = {}) {
                     'os=linux\ncpu=x64\nlibc=glibc\nloglevel=error\n'
                 );
 
-                // Install with clean slate
-                execSync('npm install --legacy-peer-deps', {
+                // Install with clean slate + forced Linux platform
+                // --os linux --cpu x64 --libc glibc: force npm to download Linux x64 binaries
+                // This fixes @tailwindcss/oxide and similar native packages on Render
+                execSync('npm install --legacy-peer-deps --os linux --cpu x64 --libc glibc', {
                     cwd: tmpDir, stdio: 'pipe', timeout: 180000,
-                    env: { ...process.env, ...envVars, npm_config_os: 'linux', npm_config_cpu: 'x64', npm_config_libc: 'glibc' }
+                    env: {
+                        ...process.env, ...envVars,
+                        npm_config_os: 'linux',
+                        npm_config_cpu: 'x64',
+                        npm_config_libc: 'glibc'
+                    }
                 });
+
+                // Safety net: if @tailwindcss/oxide native binding is still missing,
+                // force-install the Linux x64 prebuilt package explicitly
+                const oxidePath = path.join(tmpDir, 'node_modules', '@tailwindcss', 'oxide-linux-x64-gnu');
+                if (!fs.existsSync(oxidePath)) {
+                    try {
+                        execSync('npm install @tailwindcss/oxide-linux-x64-gnu --no-save --legacy-peer-deps', {
+                            cwd: tmpDir, stdio: 'pipe', timeout: 60000
+                        });
+                    } catch (_) { /* not needed for this project */ }
+                }
 
                 // Build with relative base so paths work under /sites/:id/
                 let buildCmd = 'npm run build';
