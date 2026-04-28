@@ -19,6 +19,7 @@ const auth = require('./src/auth');
 const storage = require('./src/storage');
 const databases = require('./src/databases');
 const functions = require('./src/functions');
+const deployer = require('./src/deployer');
 
 // --- Analytics Tracking Tables ---
 db.exec(`
@@ -460,6 +461,21 @@ fastify.delete('/v1/websites/:siteId', async (request) => {
     db.prepare('DELETE FROM websites WHERE id = ?').run(request.params.siteId);
     return { success: true };
 });
+
+// GitHub Auto-Deploy — clone → build → upload → serve
+// POST /v1/websites/github  body: { repoUrl, name, envVars? }
+fastify.post('/v1/websites/github', async (request, reply) => {
+    const { repoUrl, name, envVars } = request.body;
+    if (!repoUrl) return reply.status(400).send({ error: 'repoUrl is required' });
+    try {
+        const result = await deployer.deployFromGitHub(repoUrl, name, request.projectId, envVars || {});
+        return result;
+    } catch (err) {
+        return reply.status(500).send({ error: err.message });
+    }
+});
+
+// GET deploy status is implicit — site is live immediately after POST returns
 
 // ============ WEBSITE HOSTING ============
 // Serve static files from the bucket linked to a deployed website.

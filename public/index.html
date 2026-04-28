@@ -794,7 +794,7 @@
                     <div class="section-title">
                         <h1>Websites</h1>
                         <p>Static hosting deployment</p>
-                    </div><button class="btn btn-fill" onclick="openModal('create-site')">+ Deploy Site</button>
+                    </div><div style="display:flex;gap:8px"><button class="btn btn-fill" onclick="openModal('create-site')">+ Deploy Site</button><button class="btn" onclick="openModal('github-deploy')">⬡ GitHub</button></div>
                 </div>
                 <div id="site-list" class="grid"></div>
             </div>
@@ -882,7 +882,15 @@
             <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button
                     class="btn btn-fill" onclick="handleCreateSite()">Deploy</button></div>
         </div>
-    </div>
+        <div class="modal" id="modal-github-deploy" style="display:none;width:500px">
+            <h2>Deploy from GitHub</h2>
+            <p style="font-family:var(--mono);font-size:0.6rem;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:1rem">Paste any public GitHub repo URL — ClientBase will clone, build, and host it automatically.</p>
+            <input id="gh-repo-url" placeholder="https://github.com/owner/repo">
+            <input id="gh-site-name" placeholder="Site name (optional — auto-detected)">
+            <textarea id="gh-env-vars" rows="3" placeholder="ENV vars JSON (optional)&#10;{&quot;VITE_API_KEY&quot;: &quot;abc&quot;}"></textarea>
+            <div id="gh-deploy-status" style="display:none;margin-bottom:0.8rem"></div>
+            <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-fill" id="gh-deploy-btn" onclick="handleGitHubDeploy()">Deploy ↗</button></div>
+        </div>
 
     <script>
         let currentDB = null, currentCol = null, currentBucket = null;
@@ -1079,6 +1087,30 @@
         async function handleCreateAttr() { const k = document.getElementById('new-attr-key').value, t = document.getElementById('new-attr-type').value; await fetch(`/v1/databases/${currentDB.id}/collections/${currentCol.id}/attributes/string`, { method: 'POST', headers: H, body: JSON.stringify({ key: k, type: t, required: false }) }); closeModal(); document.getElementById('new-attr-key').value = ''; await loadColData(currentCol.id); }
         async function handleCreateDoc() { const data = {}; document.querySelectorAll('.doc-field-input').forEach(i => { let v = i.value; if (i.dataset.type === 'integer') v = parseInt(v) || 0; if (i.dataset.type === 'float') v = parseFloat(v) || 0; data[i.dataset.key] = v; }); await fetch(`/v1/databases/${currentDB.id}/collections/${currentCol.id}/documents`, { method: 'POST', headers: H, body: JSON.stringify(data) }); closeModal(); await loadColData(currentCol.id); }
         async function handleCreateKey() { const n = document.getElementById('new-key-name').value, s = document.getElementById('new-key-scope').value; const r = await (await fetch('/v1/keys', { method: 'POST', headers: H, body: JSON.stringify({ name: n, scopes: s }) })).json(); closeModal(); showToast('Key generated'); loadKeys(); }
+        async function handleGitHubDeploy() {
+            const btn = document.getElementById('gh-deploy-btn');
+            const status = document.getElementById('gh-deploy-status');
+            const repoUrl = document.getElementById('gh-repo-url').value.trim();
+            const name = document.getElementById('gh-site-name').value.trim();
+            const envRaw = document.getElementById('gh-env-vars').value.trim();
+            if (!repoUrl) { showToast('Enter a GitHub URL'); return; }
+            let envVars = {};
+            if (envRaw) { try { envVars = JSON.parse(envRaw); } catch(e) { showToast('Invalid JSON in env vars'); return; } }
+            btn.innerText = 'Deploying...'; btn.disabled = true;
+            status.style.display = 'block';
+            status.innerHTML = '<div class="code" style="color:var(--gray)">Cloning repo and building... this may take 1-3 minutes ⏳</div>';
+            try {
+                const res = await fetch('/v1/websites/github', { method: 'POST', headers: H, body: JSON.stringify({ repoUrl, name: name || undefined, envVars }) });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                status.innerHTML = `<div class="code" style="color:var(--green)">✓ Deployed! ${data.filesUploaded} files uploaded.<br><a href="${data.url}" target="_blank" style="color:var(--green)">${window.location.origin}${data.url} ↗</a></div>`;
+                btn.innerText = 'Done ✓'; loadWebsites();
+            } catch(e) {
+                status.innerHTML = `<div class="code" style="color:var(--red)">✗ ${e.message}</div>`;
+                btn.innerText = 'Deploy ↗'; btn.disabled = false;
+            }
+        }
+
         async function handleCreateSite() { const n = document.getElementById('new-site-name').value, b = document.getElementById('new-site-bucket').value, d = document.getElementById('new-site-domain').value; await fetch('/v1/websites', { method: 'POST', headers: H, body: JSON.stringify({ name: n, bucketId: b, domain: d }) }); closeModal(); loadWebsites(); }
 
         async function deleteDB(id) { if (confirm('Drop database?')) { await fetch(`/v1/databases/${id}`, { method: 'DELETE' }); loadDatabases(); } }

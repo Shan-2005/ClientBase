@@ -1,11 +1,12 @@
 # Use Node.js 18 slim image
 FROM node:18-slim
 
-# Install build dependencies for better-sqlite3
+# Install build dependencies for better-sqlite3 + git for GitHub deployments
 RUN apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
